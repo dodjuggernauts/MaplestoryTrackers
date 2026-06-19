@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ride the Lightning Tracker</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --ink: #18212f;
+      --muted: #667386;
+      --line: #dce3ed;
+      --nav: #17212f;
+      --accent: #236d85;
+      --accent-2: #8a5a44;
+      --event: #5fa8c2;
+      --shop: #f2c94c;
+      --limited: #e76f51;
+      --cash: #9a8c98;
+      --good: #2f7d45;
+      --warn: #a86f00;
+      --bad: #b7384e;
+      --shadow: 0 8px 24px rgba(24, 33, 47, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+    button, input, select { font: inherit; }
+    .app { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh; }
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 22px;
+      background: var(--nav);
+      color: #f7fbff;
+    }
+    main { padding: 24px; }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: 27px; line-height: 1.12; }
+    h2 { font-size: 18px; margin-bottom: 12px; }
+    .subtle { color: var(--muted); }
+    aside .subtle { color: #b7c2d1; }
+    .source { display: inline-flex; margin-top: 10px; color: #b9e2df; text-decoration: none; font-size: 13px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 22px 0; }
+    .stat { border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.07); border-radius: 8px; padding: 12px; }
+    .stat strong { display: block; font-size: 24px; line-height: 1; margin-bottom: 6px; }
+    .tabs { display: grid; gap: 8px; margin: 18px 0; }
+    .tab {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.07);
+      color: #fff;
+      text-align: left;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+    .tab.active { background: #ffffff; color: var(--nav); border-color: #ffffff; }
+    .filters { display: grid; gap: 10px; margin-top: 18px; }
+    .filters input, .filters select {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      padding: 8px 10px;
+    }
+    .filters select option { color: var(--ink); }
+    .save-note { margin-top: 12px; color: #b7c2d1; font-size: 12px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 52px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfe;
+    }
+    .segmented {
+      display: inline-flex;
+      gap: 4px;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #eef3f8;
+    }
+    .segment {
+      min-height: 30px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: #526071;
+      padding: 0 10px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .segment.active {
+      background: #ffffff;
+      color: var(--accent);
+      box-shadow: 0 1px 4px rgba(24, 33, 47, 0.12);
+    }
+    .panel-body { padding: 16px; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .button {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      padding: 0 12px;
+      cursor: pointer;
+    }
+    .button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .kpi { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fff; }
+    .kpi strong { display: block; font-size: 26px; line-height: 1; margin-bottom: 6px; }
+    .shop-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+    .shop-tab {
+      min-height: 74px;
+      border: 1px solid var(--line);
+      border-left: 7px solid var(--shop-accent, var(--accent));
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      padding: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .shop-tab strong { display: block; font-size: 16px; line-height: 1.15; margin-bottom: 6px; }
+    .shop-tab span { display: block; color: var(--muted); font-size: 12px; }
+    .shop-tab.active {
+      background: var(--shop-bg, #eef3f8);
+      border-color: var(--shop-accent, var(--accent));
+      box-shadow: inset 0 0 0 1px var(--shop-accent, var(--accent));
+    }
+    .shop-tab.all { --shop-accent: #17212f; --shop-bg: #eef3f8; }
+    .quest-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .quest-board {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(230px, 1fr));
+      gap: 12px;
+      align-items: start;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .quest-column {
+      min-width: 230px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+    .quest-column-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      min-height: 42px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #eef3f8;
+      font-weight: 800;
+    }
+    .quest-column-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .quest-column-body { display: grid; gap: 10px; padding: 10px; }
+    .quest-card {
+      border: 1px solid var(--line);
+      border-left: 7px solid var(--accent);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+    .quest-card.done { border-left-color: var(--good); background: #fbfefc; }
+    .quest-card.upcoming { border-left-color: var(--warn); }
+    .quest-card.risk { border-left-color: var(--bad); }
+    .quest-card.ended { border-left-color: #8390a0; background: #f2f5f8; color: #526071; }
+    .quest-head { display: grid; gap: 8px; align-items: start; }
+    .quest-head strong { display: block; font-size: 16px; line-height: 1.2; overflow-wrap: anywhere; }
+    .quest-starter {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #f8fafc;
+      padding: 9px 10px;
+      color: #314155;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    .quest-meta { display: flex; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 12px; }
+    .quest-check { display: inline-flex; gap: 8px; align-items: center; font-weight: 700; color: #314155; }
+    .quest-check input { width: 18px; height: 18px; accent-color: var(--good); }
+    .table-wrap { overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 9px 10px; text-align: left; vertical-align: middle; white-space: nowrap; }
+    th { position: sticky; top: 0; background: #eef3f8; z-index: 1; color: #314155; font-size: 13px; }
+    td.notes, td.details { white-space: normal; min-width: 340px; }
+    .shop-group-row td {
+      position: sticky;
+      top: 37px;
+      z-index: 1;
+      border-bottom: 1px solid rgba(24, 33, 47, 0.16);
+      border-left: 7px solid var(--shop-accent, var(--accent));
+      background: var(--shop-bg, #eef3f8);
+      color: #1d2b3d;
+      font-weight: 800;
+    }
+    .shop-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      min-width: 720px;
+    }
+    .shop-group span {
+      color: #526071;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .shop-row td:first-child {
+      border-left: 7px solid var(--shop-accent, transparent);
+    }
+    .shop-0 { --shop-accent: #2f7d45; --shop-bg: #e8f4ec; }
+    .shop-1 { --shop-accent: #236d85; --shop-bg: #e7f2f6; }
+    .shop-2 { --shop-accent: #8a5a20; --shop-bg: #fff2d9; }
+    .shop-3 { --shop-accent: #7b5ea7; --shop-bg: #f0eafa; }
+    .shop-4 { --shop-accent: #b7384e; --shop-bg: #fbe5e9; }
+    .task-section-row td {
+      border-bottom: 1px solid rgba(24, 33, 47, 0.16);
+      border-left: 7px solid var(--task-accent, var(--accent));
+      background: var(--task-bg, #eef3f8);
+      color: #1d2b3d;
+      font-weight: 800;
+    }
+    .task-world-row td {
+      border-bottom: 1px solid rgba(24, 33, 47, 0.2);
+      background: #17212f;
+      color: #f7fbff;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+    .task-world-row span {
+      color: #b7c2d1;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .task-section {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      min-width: 720px;
+    }
+    .task-section-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-toggle {
+      width: 28px;
+      height: 28px;
+      border: 1px solid rgba(24, 33, 47, 0.2);
+      border-radius: 6px;
+      background: #fff;
+      color: #1d2b3d;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .section-toggle:hover { border-color: var(--task-accent, var(--accent)); }
+    .task-section span {
+      color: #526071;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .task-row td:first-child { border-left: 7px solid var(--task-accent, transparent); }
+    .task-risk { --task-accent: #b7384e; --task-bg: #fbe5e9; }
+    .task-daily { --task-accent: #236d85; --task-bg: #e7f2f6; }
+    .task-weekly { --task-accent: #2f7d45; --task-bg: #e8f4ec; }
+    .task-upcoming { --task-accent: #a86f00; --task-bg: #fff2d9; }
+    .task-ongoing { --task-accent: #7b5ea7; --task-bg: #f0eafa; }
+    .task-complete { --task-accent: #8390a0; --task-bg: #f2f5f8; }
+    .num { text-align: right; }
+    .pill { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #eef3f8; color: #526071; }
+    .pill.good { background: #e4f3e8; color: var(--good); }
+    .pill.warn { background: #fff2d9; color: var(--warn); }
+    .pill.bad { background: #fbe5e9; color: var(--bad); }
+    .pill.world { background: #edf1f6; color: #526071; }
+    .pill.world.heroic { background: #f0eafa; color: #6a4c93; }
+    .pill.world.interactive { background: #e7f2f6; color: #236d85; }
+    .pill.world.both { background: #e8f4ec; color: #2f7d45; }
+    .progress { height: 8px; border-radius: 999px; background: #e8edf3; overflow: hidden; min-width: 120px; }
+    .bar { height: 100%; width: 0%; background: var(--accent); }
+    .bar.good { background: var(--good); }
+    input[type="number"], input[type="date"], input[type="text"] {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 5px 8px;
+      background: #fff;
+      color: var(--ink);
+    }
+    input[type="number"] { width: 96px; text-align: right; }
+    .task-done-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 700;
+      color: #314155;
+      min-width: 118px;
+    }
+    .task-done-toggle input { width: 18px; height: 18px; accent-color: var(--good); }
+    .weekly-checks { display: grid; gap: 6px; min-width: 180px; }
+    .weekly-check-grid { display: flex; gap: 5px; }
+    .weekly-check {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      color: #526071;
+      cursor: pointer;
+    }
+    .weekly-check input { position: absolute; opacity: 0; pointer-events: none; }
+    .weekly-check:has(input:checked) {
+      border-color: var(--good);
+      background: #e4f3e8;
+      color: var(--good);
+    }
+    .weekly-check-summary { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .kroma-checks {
+      display: grid;
+      gap: 6px;
+      min-width: 280px;
+      max-height: 220px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .kroma-check {
+      display: grid;
+      grid-template-columns: 18px minmax(170px, 1fr) 48px;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: #314155;
+    }
+    .kroma-check input { width: 16px; height: 16px; accent-color: var(--good); }
+    .kroma-points {
+      text-align: right;
+      color: #526071;
+      font-weight: 800;
+    }
+    .kroma-summary {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 3px;
+      border-top: 1px solid rgba(24, 33, 47, 0.12);
+      font-size: 12px;
+      font-weight: 800;
+      color: #1d2b3d;
+    }
+    .timeline { min-width: 1280px; }
+    .timeline-section {
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .timeline-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      min-height: 42px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfe;
+      font-weight: 800;
+    }
+    .timeline-title span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .timeline-range-note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .time-row { display: grid; grid-template-columns: 280px 120px 100px 100px 1fr; min-height: 30px; align-items: center; border-bottom: 1px solid var(--line); }
+    .time-row.header { font-weight: 700; background: #eef3f8; color: #314155; }
+    .time-row > div { padding: 6px 8px; }
+    .weeks { position: relative; display: grid; grid-template-columns: repeat(var(--ticks), 1fr); height: 100%; border-left: 1px solid var(--line); }
+    .week-label { font-size: 11px; border-right: 1px solid var(--line); color: #526071; }
+    .week-label.weekend { background: #f7f2ea; }
+    .lane { position: relative; height: 20px; margin: 4px 0; background: repeating-linear-gradient(90deg, transparent, transparent calc((100% / var(--ticks)) - 1px), #edf1f6 calc((100% / var(--ticks)) - 1px), #edf1f6 calc(100% / var(--ticks))); }
+    .event-bar { position: absolute; top: 3px; height: 14px; border-radius: 4px; background: var(--event); }
+    .event-bar.completed { opacity: 0.28; }
+    .today-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--bad);
+      box-shadow: 0 0 0 2px rgba(183,56,78,0.12);
+      z-index: 2;
+    }
+    .event-bar.Shop { background: var(--shop); }
+    .event-bar.Limited { background: var(--limited); }
+    .event-bar.Cash { background: var(--cash); }
+    .empty-section { padding: 12px; color: var(--muted); font-size: 14px; }
+    .hidden { display: none; }
+    @media (max-width: 920px) {
+      .app { grid-template-columns: 1fr; }
+      aside { position: static; height: auto; }
+      main { padding: 14px; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <h1>Ride the Lightning Tracker</h1>
+      <p class="subtle" id="patchName"></p>
+      <a class="source" href="https://www.nexon.com/maplestory/news/update/41138/updated-6-16-v-269-ride-the-lightning-patch-notes" target="_blank" rel="noreferrer">Patch notes source</a>
+      <div class="stats">
+        <div class="stat"><strong id="statActive">0</strong><span>Active</span></div>
+        <div class="stat"><strong id="statRisk">0</strong><span>At risk</span></div>
+        <div class="stat"><strong id="statTasks">0</strong><span>Tasks</span></div>
+        <div class="stat"><strong id="statShop">0</strong><span>Shop items</span></div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="dashboard">Dashboard</button>
+        <button class="tab" data-tab="timeline">Timeline</button>
+        <button class="tab" data-tab="tasks">Tracker</button>
+        <button class="tab" data-tab="shops">Shop Calculator</button>
+      </div>
+      <div class="filters">
+        <input id="search" type="text" placeholder="Search events, tasks, items">
+        <select id="statusFilter">
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="risk">At risk</option>
+          <option value="ended">Ended</option>
+          <option value="done">Done</option>
+        </select>
+        <select id="currencyFilter">
+          <option value="all">All currencies</option>
+        </select>
+      </div>
+      <p class="save-note" id="saveStatus">Event tracker saves separately in this browser.</p>
+    </aside>
+    <main>
+      <section id="dashboard" class="view">
+        <div class="panel">
+          <div class="panel-head"><h2>Summary</h2><button class="button" id="exportBtn">Export event progress</button></div>
+          <div class="panel-body">
+            <div class="kpis" id="kpiGrid"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Next At-Risk Items</h2><button class="button" id="importBtn">Import event progress</button></div>
+          <div class="table-wrap"><table id="riskTable"></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Quest Starters</h2><span class="subtle">Event List / Participate items</span></div>
+          <div class="panel-body">
+            <div class="quest-summary" id="questSummary"></div>
+            <div class="quest-board" id="questBoard"></div>
+          </div>
+        </div>
+      </section>
+      <section id="timeline" class="view hidden">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Event Timeline</h2>
+            <div class="segmented" aria-label="Timeline range">
+              <button class="segment active" type="button" data-timeline-range="week">Weekly</button>
+              <button class="segment" type="button" data-timeline-range="month">Monthly</button>
+              <button class="segment" type="button" data-timeline-range="all">Show all</button>
+            </div>
+          </div>
+          <div class="panel-body table-wrap"><div class="timeline" id="timelineGrid"></div></div>
+        </div>
+      </section>
+      <section id="tasks" class="view hidden">
+        <div class="panel">
+          <div class="panel-head"><h2>Daily / Weekly Tracker</h2><button class="button" id="clearTasks">Clear task progress</button></div>
+          <div class="table-wrap"><table id="taskTable"></table></div>
+        </div>
+      </section>
+      <section id="shops" class="view hidden">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Currency Totals</h2>
+            <div class="row">
+              <div class="segmented" aria-label="World filter">
+                <button class="segment active" type="button" data-world-filter="all">All Worlds</button>
+                <button class="segment" type="button" data-world-filter="heroic">Heroic</button>
+                <button class="segment" type="button" data-world-filter="interactive">Interactive</button>
+              </div>
+              <button class="button" id="clearShop">Clear shop quantities</button>
+            </div>
+          </div>
+          <div class="panel-body"><div class="kpis" id="currencyTotals"></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Shop Tabs</h2><span class="subtle">Filter calculator by shop</span></div>
+          <div class="panel-body"><div class="shop-tabs" id="shopTabs"></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Shop Calculator</h2><span class="subtle">Enter want quantities</span></div>
+          <div class="table-wrap"><table id="shopTable"></table></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <input id="importFile" class="hidden" type="file" accept="application/json">
+  <script id="app-data" type="application/json">{"patchName":"[Updated 6/16] v.269 - Ride the Lightning Patch Notes","sourceUrl":"https://www.nexon.com/maplestory/news/update/41138/updated-6-16-v-269-ride-the-lightning-patch-notes","generatedAt":"2026-06-19T19:46:48.333Z","events":[{"name":"Operation: Dive - 1st Half","type":"Event","start":"2026-06-17","end":"2026-07-21","notes":"Kroma Pack and Record Shop 1st half"},{"name":"Operation: Dive - 2nd Half","type":"Event","start":"2026-07-22","end":"2026-09-08","notes":"Second half Kroma Pack period"},{"name":"Record Shop","type":"Shop","start":"2026-06-17","end":"2026-07-21","notes":"Uses Kroma Coins"},{"name":"Raising Ellanos","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Weekly Research mission and Illusion Coins"},{"name":"Tallahart Fantasia","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Daily collection and check-in rewards"},{"name":"Phantasmal Echoes","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Weekly boss Echo currencies"},{"name":"Phantasmal Echoes Record Hall","type":"Shop","start":"2026-06-17","end":"2026-09-08","notes":"Uses Faint, Clear, and Vivid Echoes"},{"name":"Illusion Coin Shop","type":"Shop","start":"2026-06-17","end":"2026-09-08","notes":"Uses Illusion Coins"},{"name":"Meso Shop","type":"Shop","start":"2026-06-17","end":"2026-09-08","notes":"Uses Mesos"},{"name":"Challenger World","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Challenger points, coins, and missions"},{"name":"Challenger World Shop","type":"Shop","start":"2026-06-17","end":"2026-09-08","notes":"Uses Challenger Coins and Challenge Crest"},{"name":"Challenger EXP Duo","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Coupon sale ends September 7 8:00 AM UTC"},{"name":"Challenger Partners","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Partner hunting/combat missions"},{"name":"Challenger Pass","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Weekly pass points"},{"name":"Arcane Seal","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Daily Sealing Wands"},{"name":"Hyper Burning MAX","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Level-up rewards"},{"name":"Beyond Burning","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Lv. 260-270 burning rewards"},{"name":"Item Burning Plus","type":"Event","start":"2026-06-17","end":"2026-11-10","notes":"Stage mission equipment progression"},{"name":"Burning Express","type":"Event","start":"2026-07-08","end":"2026-08-04","notes":"Daily 1,000-monster check-in"},{"name":"Arthur's Equipment Rental","type":"Event","start":"2026-06-17","end":"2026-11-10","notes":"Weekly equipment rental limit"},{"name":"Jump-Start Tutorial","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"One-time onboarding/tutorial"},{"name":"Mechaberry Farm","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Entry pass EXP event"},{"name":"Prolific Portraitist","type":"Limited Event","start":"2026-07-02","end":"2026-07-05","notes":"Level-gated short event"},{"name":"Chroma Essense","type":"Limited Event","start":"2026-07-09","end":"2026-07-22","notes":"30,000 Chroma Essence quest up to 4 weekly"},{"name":"Genesis Pass","type":"Cash Pass","start":"2026-06-18","end":"2026-11-02","notes":"Sale period; pass use expires November 3"},{"name":"Momentum Pass - 1st Half","type":"Event","start":"2026-07-01","end":"2026-08-04","notes":"Lv. 280+ pass weekly missions"},{"name":"Momentum Pass - 2nd Half","type":"Event","start":"2026-08-05","end":"2026-09-08","notes":"Second Momentum Pass window"},{"name":"Luxe Sauna","type":"Event","start":"2026-06-17","end":"2026-09-08","notes":"Charge/use sauna time"},{"name":"Miracle Time","type":"Limited Event","start":"2026-06-26","end":"2026-07-01","notes":"Equipment-specific cube rank-up days"},{"name":"Sunny Sunday","type":"Limited Event","start":"2026-06-21","end":"2026-07-19","notes":"Sunday perk dates in patch notes"}],"tasks":[{"id":"task-0","event":"Operation: Dive","task":"Kroma Pack weekly points","cadence":"Weekly","reset":"Weekly cap","start":"2026-06-17","end":"2026-09-08","target":2000,"notes":"Complete daily/weekly Collection Tasks; earns Kroma Points and Kroma Coins"},{"id":"task-1","event":"Operation: Dive","task":"Story/Episode milestones","cadence":"Ongoing","reset":"Event end","start":"2026-06-17","end":"2026-09-08","target":6,"notes":"View the Prologue and Episodes 1-5 to claim milestone rewards"},{"id":"task-2","event":"Raising Ellanos","task":"Research Mission enemy defeats","cadence":"Weekly","reset":"Weekly reset","start":"2026-06-17","end":"2026-09-08","target":10000,"notes":"Defeat 10,000 enemies; research every 2,000 defeats for up to 4,000 Illusion Coins"},{"id":"task-3","event":"Tallahart Fantasia","task":"Daily Collection","cadence":"Daily/Weekly","reset":"5 times per week, 56 total","start":"2026-06-17","end":"2026-09-08","target":56,"notes":"Daily collection grants 3x EXP Coupons, Memote, Nostamote, and check-in progress"},{"id":"task-4","event":"Phantasmal Echoes","task":"Faint Echoes","cadence":"Weekly","reset":"Thursday 12:00 PM UTC","start":"2026-06-17","end":"2026-09-08","target":3000,"notes":"Defeat weekly bosses solo; Faint Echoes weekly cap"},{"id":"task-5","event":"Phantasmal Echoes","task":"Clear Echoes","cadence":"Weekly","reset":"Thursday 12:00 PM UTC","start":"2026-06-17","end":"2026-09-08","target":2000,"notes":"Defeat higher weekly bosses solo; Clear Echoes weekly cap"},{"id":"task-6","event":"Phantasmal Echoes","task":"Vivid Echoes","cadence":"Weekly","reset":"Thursday 12:00 PM UTC","start":"2026-06-17","end":"2026-09-08","target":100,"notes":"Defeat high-tier weekly bosses solo; Vivid Echoes weekly cap"},{"id":"task-7","event":"Challenger World","task":"Hunting Missions","cadence":"Daily/Weekly","reset":"Once daily, 5 times weekly","start":"2026-06-17","end":"2026-09-08","target":5,"notes":"Defeat 1,000 enemies near level; 300 Challenger Coins each"},{"id":"task-8","event":"Challenger World","task":"Boss Missions","cadence":"Ongoing","reset":"Event end","start":"2026-06-17","end":"2026-09-08","target":1,"notes":"Complete eligible boss missions for Challenger Points/Coins"},{"id":"task-9","event":"Challenger Pass","task":"Weekly Pass Points","cadence":"Weekly","reset":"3,000 points/week cap","start":"2026-06-17","end":"2026-09-08","target":3000,"notes":"Complete weekly missions; 480 points per pass level"},{"id":"task-10","event":"Challenger Partners","task":"Hunting Points","cadence":"Weekly","reset":"100,000 points/week cap","start":"2026-06-17","end":"2026-09-08","target":100000,"notes":"Partner earns Hunting Points from your near-level enemy defeats"},{"id":"task-11","event":"Challenger EXP Duo","task":"Duo enemy defeats","cadence":"Coupon","reset":"7 days after coupon use","start":"2026-06-17","end":"2026-09-08","target":645000,"notes":"Designated Challenger character earns Duo Points by defeating enemies"},{"id":"task-12","event":"Arcane Seal","task":"Use Sealing Wands","cadence":"Daily","reset":"3 wands daily; max 20 held","start":"2026-06-17","end":"2026-09-08","target":3,"notes":"Use daily Sealing Wands to break barriers and obtain Arcane Cores"},{"id":"task-16","event":"Burning Express","task":"Daily check-ins","cadence":"Daily","reset":"Daily reset","start":"2026-07-08","end":"2026-08-04","target":28,"notes":"Defeat 1,000 monsters near level and check in"},{"id":"task-17","event":"Mechaberry Farm","task":"Entry Pass purchases","cadence":"Weekly","reset":"2 purchases weekly, Meso Shop duration","start":"2026-06-17","end":"2026-09-08","target":24,"notes":"Purchase up to 2 Mechaberry Farm Entry Passes per week from the Meso Shop"},{"id":"task-18","event":"Prolific Portraitist","task":"Portrait Commission Ticket","cadence":"Short window","reset":"Level-gated dates July 2-5","start":"2026-07-02","end":"2026-07-05","target":1,"notes":"Claim once per eligible account"},{"id":"task-19","event":"Chroma Essense","task":"Chroma Essence exchange","cadence":"Weekly","reset":"4 completions/week","start":"2026-07-09","end":"2026-07-22","target":30000,"notes":"Collect 30,000 Chroma Essence per Portrait Commission Ticket exchange"},{"id":"task-20","event":"Momentum Pass","task":"Weekly Mission Points","cadence":"Weekly","reset":"2,000 points/week cap","start":"2026-07-01","end":"2026-09-08","target":2000,"notes":"Lv. 280+ weekly missions; 720 points per pass level"}],"questStarters":[{"id":"quest-0","event":"SHINE: The Power of Starlight","starter":"[Shine] Starlight's Call","start":"2026-06-17","end":"2026-09-08"},{"id":"quest-1","event":"Operation: Dive","starter":"[Operation:Dive] An Outsider's Perspective","start":"2026-06-17","end":"2026-09-08"},{"id":"quest-2","event":"Raising Ellanos","starter":"[Level-Up Event] Raising Ellanos","start":"2026-06-17","end":"2026-09-08"},{"id":"quest-3","event":"Tallahart Fantasia","starter":"[Check In Event] Tallahart Fantasia","start":"2026-06-17","end":"2026-09-08"},{"id":"quest-4","event":"Phantasmal Echoes","starter":"[Boss Event] Phantasmal Echoes","start":"2026-06-17","end":"2026-09-08"},{"id":"quest-5","event":"Challenger World","starter":"Challenger World > Participate","start":"2026-06-17","end":"2026-09-08"},{"id":"quest-6","event":"Challenger Partners","starter":"Challenger Partners or Frendy/Frenny","start":"2026-06-17","end":"2026-09-08"},{"id":"quest-7","event":"Challenger Pass","starter":"Challenger Pass > Participate","start":"2026-06-17","end":"2026-09-08"},{"id":"quest-8","event":"Arcane Seal","starter":"[Challenger] Arcane Seal","start":"2026-06-17","end":"2026-09-08"},{"id":"quest-11","event":"Burning Express","starter":"Burning Express > Participate","start":"2026-07-08","end":"2026-08-04"},{"id":"quest-12","event":"Arthur's Equipment Rental","starter":"Arthur's Equipment Rental > Participate","start":"2026-06-17","end":"2026-11-10"},{"id":"quest-13","event":"Jump-Start Tutorial","starter":"Open Guide on first login","start":"2026-06-17","end":"2026-09-08"},{"id":"quest-14","event":"Prolific Portraitist","starter":"Prolific Portraitist / Wandering Portraitist","start":"2026-07-02","end":"2026-07-05"},{"id":"quest-15","event":"Chroma Essense","starter":"Chroma Essense > Participate","start":"2026-07-09","end":"2026-07-22"},{"id":"quest-16","event":"Momentum Pass","starter":"Momentum Pass > Participate","start":"2026-07-01","end":"2026-09-08"}],"kromaCollectionTasks":[{"id":"kroma-0","label":"Complete Monster Park 1/1","points":15},{"id":"kroma-1","label":"Complete Monster Park 2/2","points":15},{"id":"kroma-2","label":"Complete Monster Park 3/3","points":20},{"id":"kroma-3","label":"Complete Monster Park 4/4","points":20},{"id":"kroma-4","label":"Complete Monster Park 5/5","points":25},{"id":"kroma-5","label":"Complete Monster Park 6/6","points":25},{"id":"kroma-6","label":"Complete Monster Park 7/7","points":40},{"id":"kroma-7","label":"Complete Monster Park 8/8","points":50},{"id":"kroma-8","label":"Complete Monster Park 9/9","points":70},{"id":"kroma-9","label":"Complete Monster Park 10/10","points":100},{"id":"kroma-10","label":"Complete Monster Park Extreme 1/1","points":110},{"id":"kroma-11","label":"Complete an Epic Dungeon 1/1","points":150},{"id":"kroma-12","label":"Defeat Enemies Near Your Level 2000/2000","points":20},{"id":"kroma-13","label":"Defeat Enemies Near Your Level 4000/4000","points":25},{"id":"kroma-14","label":"Defeat Enemies Near Your Level 6000/6000","points":30},{"id":"kroma-15","label":"Defeat Enemies Near Your Level 8000/8000","points":35},{"id":"kroma-16","label":"Defeat Enemies Near Your Level 10000/10000","points":40},{"id":"kroma-17","label":"Defeat Enemies Near Your Level 12000/12000","points":45},{"id":"kroma-18","label":"Defeat Enemies Near Your Level 14000/14000","points":50},{"id":"kroma-19","label":"Defeat Enemies Near Your Level 16000/16000","points":55},{"id":"kroma-20","label":"Defeat Enemies Near Your Level 18000/18000","points":60},{"id":"kroma-21","label":"Defeat Enemies Near Your Level 20000/20000","points":180},{"id":"kroma-22","label":"Complete a Mystic Frontier Expedition 1/1","points":200},{"id":"kroma-23","label":"Complete Sharenian Culvert 1/1","points":200},{"id":"kroma-24","label":"Defeat a Weekly Boss 3/3","points":50},{"id":"kroma-25","label":"Defeat a Weekly Boss 6/6","points":120},{"id":"kroma-26","label":"Defeat a Weekly Boss 12/12","points":250}],"operationDiveEpisodes":[{"id":"episode-0","label":"Prologue","reward":"Witness to the Beyond Medal, 500 Kroma Coins"},{"id":"episode-1","label":"Episode 1","reward":"Nodestone x50, 500 Kroma Coins"},{"id":"episode-2","label":"Episode 2","reward":"Magnificent Growth Potion, 500 Kroma Coins"},{"id":"episode-3","label":"Episode 3","reward":"Onyx Apple x10, 500 Kroma Coins"},{"id":"episode-4","label":"Episode 4","reward":"Sauna Coupon x2, 500 Kroma Coins"},{"id":"episode-5","label":"Episode 5","reward":"Forward to the Beginning Medal, 500 Kroma Coins"}],"shops":[{"id":"shop-0","shop":"Record Shop","tab":"","currency":"Kroma Coins","item":"Sol Erda Fragment x10 Coupon","details":"Sol Erda Fragment x10 Coupon: Untradable, expires July 22, 2026 2:00 AM UTC .","cost":450,"limit":"30","end":"2026-07-21"},{"id":"shop-1","shop":"Record Shop","tab":"","currency":"Kroma Coins","item":"Mysterious Star Speck Box","details":"Mysterious Star Speck Box: Tradable within world, Permanent.","cost":65,"limit":"40","end":"2026-07-21"},{"id":"shop-2","shop":"Record Shop","tab":"","currency":"Kroma Coins","item":"4x EXP Coupon (30 min)","details":"4x EXP Coupon (30 min): Untradable, expires July 22, 2026 2:00 AM UTC .","cost":1200,"limit":"5","end":"2026-07-21"},{"id":"shop-3","shop":"Record Shop","tab":"","currency":"Kroma Coins","item":"Advanced EXP Voucher","details":"Advanced EXP Voucher: Tradable within world, expires July 22, 2026 2:00 AM UTC .","cost":2,"limit":"1000","end":"2026-07-21"},{"id":"shop-4","shop":"Record Shop","tab":"","currency":"Kroma Coins","item":"Nodestone x10 Coupon","details":"Nodestone x10 Coupon: Tradable within world, Permanent.","cost":30,"limit":"30","end":"2026-07-21"},{"id":"shop-5","shop":"Record Shop","tab":"","currency":"Kroma Coins","item":"Maple Anniversary Damage Skin Selection Box","details":"Maple Anniversary Damage Skin Selection Box: Untradable, expires July 22, 2026 2:00 AM UTC . Open to receive: 12th Anniversary Maple Leaf Damage Skin: Tradable within world, Permanent. Constellation Damage Skin: Tradable within world, Permanent. 14th Street Damage Skin: Tradable within world, Permanent. Pixel Basic Damage Skin: Tradable within world, Permanent. Crystal Gold Damage Skin (Unit): Tradable within world, Permanent. Blooming Forest Damage Skin (Unit): Tradable within world, Permanent. Momentree Damage Skin (Unit): Tradable within world, Permanent. Mayple Damage Skin (Unit): Tradable within world, Permanent.","cost":1000,"limit":"1","end":"2026-07-21"},{"id":"shop-6","shop":"Record Shop","tab":"","currency":"Kroma Coins","item":"Spiegelette's Golden Tomato Punch King One-Time Entry Pass","details":"Spiegelette's Golden Tomato Punch King One-Time Entry Pass: Tradable within world, expires July 22, 2026 2:00 AM UTC .","cost":3500,"limit":"2","end":"2026-07-21"},{"id":"shop-7","shop":"Phantasmal Echoes Record Hall","tab":"Basic Tab","currency":"Faint Echoes","item":"VIP Buff Selector Coupon","details":"VIP Buff Selector Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":10,"limit":"Unlimited","end":"2026-09-08"},{"id":"shop-8","shop":"Phantasmal Echoes Record Hall","tab":"Basic Tab","currency":"Faint Echoes","item":"3x EXP Coupon (30 min)","details":"3x EXP Coupon (30 min): Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":100,"limit":"7 weekly","end":"2026-09-08"},{"id":"shop-9","shop":"Phantasmal Echoes Record Hall","tab":"Basic Tab","currency":"Faint Echoes","item":"Karma Eternal Rebirth Flame","details":"Karma Eternal Rebirth Flame: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":50,"limit":"300","end":"2026-09-08"},{"id":"shop-10","shop":"Phantasmal Echoes Record Hall","tab":"Basic Tab","currency":"Faint Echoes","item":"Special Medal of Honor","details":"Special Medal of Honor: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":100,"limit":"350","end":"2026-09-08"},{"id":"shop-11","shop":"Phantasmal Echoes Record Hall","tab":"Basic Tab","currency":"Faint Echoes","item":"Black Circulator","details":"Black Circulator: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":1000,"limit":"30","end":"2026-09-08"},{"id":"shop-12","shop":"Phantasmal Echoes Record Hall","tab":"Basic Tab","currency":"Faint Echoes","item":"Symbol Selector Coupon","details":"Symbol Selector Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC . Use to receive one of the following: Arcane Symbol Selector Coupon: Tradable within world, 14-day duration. Sacred Symbol Selector Coupon: Tradable within world, 14-day duration.","cost":100,"limit":"300","end":"2026-09-08"},{"id":"shop-13","shop":"Phantasmal Echoes Record Hall","tab":"Intermediate Tab","currency":"Clear Echoes","item":"Karma Bright Cube","details":"Karma Bright Cube: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":120,"limit":"3 weekly","end":"2026-09-08"},{"id":"shop-14","shop":"Phantasmal Echoes Record Hall","tab":"Intermediate Tab","currency":"Clear Echoes","item":"(Interactive Worlds) Karma Bonus Bright Cube","details":"(Interactive Worlds) Karma Bonus Bright Cube: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":240,"limit":"3 weekly","end":"2026-09-08"},{"id":"shop-15","shop":"Phantasmal Echoes Record Hall","tab":"Intermediate Tab","currency":"Clear Echoes","item":"(Heroic Worlds) Karma Solid Cube x2 Coupon","details":"(Heroic Worlds) Karma Solid Cube x2 Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":120,"limit":"6 weekly","end":"2026-09-08"},{"id":"shop-16","shop":"Phantasmal Echoes Record Hall","tab":"Intermediate Tab","currency":"Clear Echoes","item":"(Interactive Worlds) Karma Premium Scroll - Pet Equipment Selector Coupon","details":"(Interactive Worlds) Karma Premium Scroll - Pet Equipment Selector Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC . Use to receive one of the following: Karma Premium Scroll for Pet Equip. for Attack Power 100%: Tradable within world, 7-day duration. Karma Premium Scroll for Pet Equip. for Magic ATT 100%: Tradable within world, 7-day duration.","cost":400,"limit":"45","end":"2026-09-08"},{"id":"shop-17","shop":"Phantasmal Echoes Record Hall","tab":"Intermediate Tab","currency":"Clear Echoes","item":"(Heroic Worlds) Karma Eternal Rebirth Flame","details":"(Heroic Worlds) Karma Eternal Rebirth Flame: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":15,"limit":"500","end":"2026-09-08"},{"id":"shop-18","shop":"Phantasmal Echoes Record Hall","tab":"Intermediate Tab","currency":"Clear Echoes","item":"(Interactive Worlds) Karma Incredible Chaos Scroll of Goodness 100%","details":"(Interactive Worlds) Karma Incredible Chaos Scroll of Goodness 100%: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":20,"limit":"120","end":"2026-09-08"},{"id":"shop-19","shop":"Phantasmal Echoes Record Hall","tab":"Intermediate Tab","currency":"Clear Echoes","item":"(Heroic Worlds) Extreme Growth Potion x3 Coupon","details":"(Heroic Worlds) Extreme Growth Potion x3 Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":150,"limit":"3 weekly","end":"2026-09-08"},{"id":"shop-20","shop":"Phantasmal Echoes Record Hall","tab":"Intermediate Tab","currency":"Clear Echoes","item":"(Interactive Worlds) Ark Innocence Scroll 100%","details":"(Interactive Worlds) Ark Innocence Scroll 100%: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":20,"limit":"30","end":"2026-09-08"},{"id":"shop-21","shop":"Phantasmal Echoes Record Hall","tab":"Intermediate Tab","currency":"Clear Echoes","item":"Karma Black Rebirth Flame","details":"Karma Black Rebirth Flame: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":20,"limit":"750","end":"2026-09-08"},{"id":"shop-22","shop":"Phantasmal Echoes Record Hall","tab":"Intermediate Tab","currency":"Clear Echoes","item":"(Interactive Worlds) Karma Premium Scroll - Accessory Selector Coupon","details":"(Interactive Worlds) Karma Premium Scroll - Accessory Selector Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC . Use to receive one of the following: Karma Premium Scroll for Accessory for Attack Power 100%: Tradable within world, 7-day duration. Karma Premium Scroll for Accessory for Magic ATT 100%: Tradable within world, 7-day duration.","cost":400,"limit":"45","end":"2026-09-08"},{"id":"shop-23","shop":"Phantasmal Echoes Record Hall","tab":"Intermediate Tab","currency":"Clear Echoes","item":"(Heroic Worlds) Black Circulator x3 Coupon","details":"(Heroic Worlds) Black Circulator x3 Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":400,"limit":"2 Weekly","end":"2026-09-08"},{"id":"shop-24","shop":"Phantasmal Echoes Record Hall","tab":"Advanced Tab","currency":"Vivid Echoes","item":"Karma Abyssal Rebirth Flame","details":"Karma Abyssal Rebirth Flame: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":1,"limit":"900","end":"2026-09-08"},{"id":"shop-25","shop":"Phantasmal Echoes Record Hall","tab":"Advanced Tab","currency":"Vivid Echoes","item":"Sol Erda","details":"Sol Erda: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":10,"limit":"30","end":"2026-09-08"},{"id":"shop-26","shop":"Phantasmal Echoes Record Hall","tab":"Advanced Tab","currency":"Vivid Echoes","item":"Mu Gong's Soul Shard","details":"Mu Gong's Soul Shard: Untradable, Permanent.","cost":10,"limit":"30","end":"2026-09-08"},{"id":"shop-27","shop":"Phantasmal Echoes Record Hall","tab":"Advanced Tab","currency":"Vivid Echoes","item":"Karma Bright Cube","details":"Karma Bright Cube: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":2,"limit":"7 weekly","end":"2026-09-08"},{"id":"shop-28","shop":"Phantasmal Echoes Record Hall","tab":"Advanced Tab","currency":"Vivid Echoes","item":"(Interactive Worlds) Karma Bonus Bright Cube","details":"(Interactive Worlds) Karma Bonus Bright Cube: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":3,"limit":"7 weekly","end":"2026-09-08"},{"id":"shop-29","shop":"Phantasmal Echoes Record Hall","tab":"Advanced Tab","currency":"Vivid Echoes","item":"(Heroic Worlds) Karma Solid Cube","details":"(Heroic Worlds) Karma Solid Cube: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":1,"limit":"20 weekly","end":"2026-09-08"},{"id":"shop-30","shop":"Phantasmal Echoes Record Hall","tab":"Advanced Tab","currency":"Vivid Echoes","item":"Plasma Heart Upgrade Module","details":"Plasma Heart Upgrade Module: Tradable within world, expires September 9, 2026 2:00 AM UTC . Quantity limit 1 for both Interactive World and Challenger World Note: Can only be purchased after defeating Kaling (Easy) or a higher difficulty boss. Players must participate in the 'Night of Phantasms' event first, then defeat Kaling (Easy) or a higher difficulty boss (in a solo party) after to be eligible to purchase the Plasma Heart Upgrade Module.","cost":5,"limit":"1","end":"2026-09-08"},{"id":"shop-31","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"(Interactive Worlds) Bonus Mystical Cube","details":"(Interactive Worlds) Bonus Mystical Cube: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":50,"limit":"200","end":"2026-09-08"},{"id":"shop-32","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"(Heroic Worlds) Mystical Cube","details":"(Heroic Worlds) Mystical Cube: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":50,"limit":"200","end":"2026-09-08"},{"id":"shop-33","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"Epic Potential Scroll 100%","details":"Epic Potential Scroll 100%: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":300,"limit":"5","end":"2026-09-08"},{"id":"shop-34","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"(Interactive Worlds) Special Bonus Potential Scroll","details":"(Interactive Worlds) Special Bonus Potential Scroll: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":300,"limit":"5","end":"2026-09-08"},{"id":"shop-35","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"(Interactive Worlds) Innocence Scroll 100%","details":"(Interactive Worlds) Innocence Scroll 100%: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":100,"limit":"20","end":"2026-09-08"},{"id":"shop-36","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"(Interactive Worlds) Pet Equipment Scroll Selector Coupon","details":"(Interactive Worlds) Pet Equipment Scroll Selector Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":500,"limit":"20","end":"2026-09-08"},{"id":"shop-37","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"(Heroic Worlds) Karma Hard Cube","details":"(Heroic Worlds) Karma Hard Cube: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":250,"limit":"40","end":"2026-09-08"},{"id":"shop-38","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"(Interactive Worlds) Pure Clean Slate Scroll 100%","details":"(Interactive Worlds) Pure Clean Slate Scroll 100%: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":200,"limit":"10","end":"2026-09-08"},{"id":"shop-39","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"1-of-3 Event Ring Selector Coupon","details":"1-of-3 Event Ring Selector Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":3000,"limit":"3","end":"2026-09-08"},{"id":"shop-40","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"(Heroic Worlds) Event Ring Exclusive Solid Cube","details":"(Heroic Worlds) Event Ring Exclusive Solid Cube: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":60,"limit":"100","end":"2026-09-08"},{"id":"shop-41","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"Event Ring Exc. Legendary Potential Scroll 100%","details":"Event Ring Exc. Legendary Potential Scroll 100%: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":4000,"limit":"3","end":"2026-09-08"},{"id":"shop-42","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"Karma Unique Potential Scroll 100%","details":"Karma Unique Potential Scroll 100%: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":3000,"limit":"4","end":"2026-09-08"},{"id":"shop-43","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"(Interactive Worlds) Karma Bonus Epic Potential Scroll 100%","details":"(Interactive Worlds) Karma Bonus Epic Potential Scroll 100%: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":3000,"limit":"4","end":"2026-09-08"},{"id":"shop-44","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"(Interactive Worlds) Karma Special Heart Scroll Selector Coupon","details":"(Interactive Worlds) Karma Special Heart Scroll Selector Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC . Use to receive one of the following: Karma Special Heart Attack Scroll 100% Karma Special Heart Magic ATT Scroll 100%","cost":2000,"limit":"10","end":"2026-09-08"},{"id":"shop-45","shop":"Illusion Coin Shop","tab":"Enhancement Tab","currency":"Illusion Coins","item":"(Heroic Worlds) Karma Hard Cube x2 Coupon","details":"(Heroic Worlds) Karma Hard Cube x2 Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":500,"limit":"20","end":"2026-09-08"},{"id":"shop-46","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"AP Reset Scroll","details":"AP Reset Scroll: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":50,"limit":"3","end":"2026-09-08"},{"id":"shop-47","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"SP Reset Scroll","details":"SP Reset Scroll: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":50,"limit":"3","end":"2026-09-08"},{"id":"shop-48","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Mysterious Monsterbloom","details":"Mysterious Monsterbloom: Tradable within world, Permanent.","cost":300,"limit":"40 per world","end":"2026-09-08"},{"id":"shop-49","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Trait Boost Potion","details":"Trait Boost Potion: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":300,"limit":"20","end":"2026-09-08"},{"id":"shop-50","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Selective 8-slot Coupon","details":"Selective 8-slot Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":100,"limit":"15","end":"2026-09-08"},{"id":"shop-51","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Infinite Revitalizer","details":"Infinite Revitalizer: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":10,"limit":"5 Daily","end":"2026-09-08"},{"id":"shop-52","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Character Slot Expansion Coupon","details":"Character Slot Expansion Coupon: Untradable, expires September 9, 2026 2:00 AM UTC .","cost":200,"limit":"5","end":"2026-09-08"},{"id":"shop-53","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Extra Storage Selector Coupon","details":"Extra Storage Selector Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":1000,"limit":"10","end":"2026-09-08"},{"id":"shop-54","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Experience Nodestone","details":"Experience Nodestone: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":150,"limit":"200","end":"2026-09-08"},{"id":"shop-55","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Chaos Circulator","details":"Chaos Circulator: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":800,"limit":"20","end":"2026-09-08"},{"id":"shop-56","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Black Circulator","details":"Black Circulator: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":1500,"limit":"10","end":"2026-09-08"},{"id":"shop-57","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Legendary Circulator","details":"Legendary Circulator: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":2000,"limit":"3","end":"2026-09-08"},{"id":"shop-58","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Spiegelette's Golden Strawberry Farm One-Time Entry Pass","details":"Spiegelette's Golden Strawberry Farm One-Time Entry Pass: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":200,"limit":"5 Weekly","end":"2026-09-08"},{"id":"shop-59","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Extreme Growth Potion","details":"Extreme Growth Potion: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":70,"limit":"200","end":"2026-09-08"},{"id":"shop-60","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Magnificent Growth Potion","details":"Magnificent Growth Potion: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":10000,"limit":"2","end":"2026-09-08"},{"id":"shop-61","shop":"Illusion Coin Shop","tab":"Growth Tab","currency":"Illusion Coins","item":"Sol Erda","details":"Sol Erda: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":10000,"limit":"1","end":"2026-09-08"},{"id":"shop-62","shop":"Meso Shop","tab":"Normal Tab","currency":"Mesos","item":"Plasma Heart","details":"Plasma Heart: Untradable, Permanent. Note: Plasma Heart can only be purchased after obtaining one from a Plasma Heart Upgrade Module.","cost":3000000000,"limit":"3","end":"2026-09-08"},{"id":"shop-63","shop":"Meso Shop","tab":"Normal Tab","currency":"Mesos","item":"(Interactive Worlds) Karma Incredible Chaos Scroll of Goodness 100%","details":"(Interactive Worlds) Karma Incredible Chaos Scroll of Goodness 100%: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":300000000,"limit":"100","end":"2026-09-08"},{"id":"shop-64","shop":"Meso Shop","tab":"Normal Tab","currency":"Mesos","item":"(Interactive Worlds) Pet Equipment Stat Transfer Scroll","details":"(Interactive Worlds) Pet Equipment Stat Transfer Scroll: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":200000000,"limit":"5","end":"2026-09-08"},{"id":"shop-65","shop":"Meso Shop","tab":"Normal Tab","currency":"Mesos","item":"(Heroic Worlds) Karma Eternal Rebirth Flame","details":"(Heroic Worlds) Karma Eternal Rebirth Flame: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":500000000,"limit":"10","end":"2026-09-08"},{"id":"shop-66","shop":"Meso Shop","tab":"Normal Tab","currency":"Mesos","item":"Damage Skin Extraction Coupon","details":"Damage Skin Extraction Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":200000000,"limit":"1","end":"2026-09-08"},{"id":"shop-67","shop":"Meso Shop","tab":"Normal Tab","currency":"Mesos","item":"Android Ear Sensor Clip","details":"Android Ear Sensor Clip: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":1200000000,"limit":"1","end":"2026-09-08"},{"id":"shop-68","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"NEW Mechaberry Farm Entry Pass","details":"NEW Mechaberry Farm Entry Pass: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":1000000000,"limit":"2 Weekly","end":"2026-09-08"},{"id":"shop-69","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Express Booster","details":"Express Booster: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":60000000,"limit":"10 Weekly","end":"2026-09-08"},{"id":"shop-70","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Skin Coupon Selector Coupon","details":"Skin Coupon Selector Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":1000000000,"limit":"8","end":"2026-09-08"},{"id":"shop-71","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Perfect Day for Laundry Chair","details":"Perfect Day for Laundry Chair: Untradable, Permanent.","cost":300000000,"limit":"1","end":"2026-09-08"},{"id":"shop-72","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Froggie Water Slide Chair Selector Coupon","details":"Froggie Water Slide Chair Selector Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":400000000,"limit":"1","end":"2026-09-08"},{"id":"shop-73","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Permanent Flower Petal Prop Mount Coupon","details":"Permanent Flower Petal Prop Mount Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":200000000,"limit":"1","end":"2026-09-08"},{"id":"shop-74","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Permanent Aurora Doe Mount Coupon","details":"Permanent Aurora Doe Mount Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":200000000,"limit":"1","end":"2026-09-08"},{"id":"shop-75","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Manji Outfit Coupon","details":"Manji Outfit Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":2000000000,"limit":"1","end":"2026-09-08"},{"id":"shop-76","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Lania Outfit Coupon","details":"Lania Outfit Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":2000000000,"limit":"1","end":"2026-09-08"},{"id":"shop-77","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Moni Face Coupon","details":"Moni Face Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":2000000000,"limit":"3","end":"2026-09-08"},{"id":"shop-78","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Lania Face Coupon","details":"Lania Face Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":2000000000,"limit":"3","end":"2026-09-08"},{"id":"shop-79","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Manji Face Coupon","details":"Manji Face Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC .","cost":2000000000,"limit":"3","end":"2026-09-08"},{"id":"shop-80","shop":"Meso Shop","tab":"Special Tab","currency":"Mesos","item":"Event Android Selector Coupon","details":"Event Android Selector Coupon: Tradable within world, expires September 9, 2026 2:00 AM UTC . Use to choose one of the following: Sugaroid Lilinroid Laniaroid Moinroid Heroic Worlds: Untradable, Permanent. Interactive Worlds: Tradable within world, Permanent.","cost":600000000,"limit":"5","end":"2026-09-08"},{"id":"shop-81","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Frozen Secondary Weapon Box","details":"Frozen Secondary Weapon Box: Untradable, expires September 9, 2026 at 2:00 AM UTC .","cost":100,"limit":"1","end":"2026-09-08"},{"id":"shop-82","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"3x EXP Coupon (30 min)","details":"3x EXP Coupon (30 min): Tradable within world, 1-day duration.","cost":100,"limit":"7 Weekly","end":"2026-09-08"},{"id":"shop-83","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"VIP Buff Selector Coupon","details":"VIP Buff Selector Coupon: Tradable within world, 1-day duration.","cost":30,"limit":"Unlimited","end":"2026-09-08"},{"id":"shop-84","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Karma Black Rebirth Flame","details":"Karma Black Rebirth Flame: Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":50,"limit":"1,000","end":"2026-09-08"},{"id":"shop-85","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Sol Erda Fragment","details":"Sol Erda Fragment: Untradable, Permanent","cost":40,"limit":"500","end":"2026-09-08"},{"id":"shop-86","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Sol Erda","details":"Sol Erda: Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":2000,"limit":"5","end":"2026-09-08"},{"id":"shop-87","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Mystical Cube","details":"Mystical Cube: Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":5,"limit":"1,000","end":"2026-09-08"},{"id":"shop-88","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Karma Solid Cube","details":"Karma Solid Cube: Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":100,"limit":"100","end":"2026-09-08"},{"id":"shop-89","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"(Interactive Worlds) Karma Bonus Mystical Cube","details":"(Interactive Worlds) Karma Bonus Mystical Cube: Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":20,"limit":"1,000","end":"2026-09-08"},{"id":"shop-90","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"(Interactive Worlds) Pet Equipment Scroll Selector Coupon","details":"(Interactive Worlds) Pet Equipment Scroll Selector Coupon: Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":500,"limit":"100","end":"2026-09-08"},{"id":"shop-91","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Epic Potential Scroll 100%","details":"Epic Potential Scroll 100%: Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":150,"limit":"30","end":"2026-09-08"},{"id":"shop-92","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Bonus Potential Scroll 100% (Interactive only)","details":"Bonus Potential Scroll 100% (Interactive only): Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":150,"limit":"30","end":"2026-09-08"},{"id":"shop-93","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Karma Premium Scroll - Pet Equipment Selector Coupon (Interactive only)","details":"Karma Premium Scroll - Pet Equipment Selector Coupon (Interactive only): Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":1000,"limit":"10","end":"2026-09-08"},{"id":"shop-94","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Innocence Scroll 100% (Interactive only)","details":"Innocence Scroll 100% (Interactive only): Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":50,"limit":"10","end":"2026-09-08"},{"id":"shop-95","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Pure Clean Slate Scroll 100% (Interactive only)","details":"Pure Clean Slate Scroll 100% (Interactive only): Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":100,"limit":"10","end":"2026-09-08"},{"id":"shop-96","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Karma Star Force 17-Star Enhancement (Lv. 160)","details":"Karma Star Force 17-Star Enhancement (Lv. 160): Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":3000,"limit":"3","end":"2026-09-08"},{"id":"shop-97","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"Karma Premium Scroll - Accessory Selector Coupon (Interactive only)","details":"Karma Premium Scroll - Accessory Selector Coupon (Interactive only): Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":1000,"limit":"10","end":"2026-09-08"},{"id":"shop-98","shop":"Challenger World Shop","tab":"General Tab","currency":"Challenger Coins","item":"(Interactive Worlds) Spell Trace (x1,000)","details":"(Interactive Worlds) Spell Trace (x1,000): Tradable within world, Permanent.","cost":100,"limit":"Unlimited","end":"2026-09-08"},{"id":"shop-99","shop":"Challenger World Shop","tab":"Special Tab","currency":"Challenge Crest","item":"Karma Abyssal Rebirth Flame","details":"Karma Abyssal Rebirth Flame: Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":1,"limit":"250","end":"2026-09-08"},{"id":"shop-100","shop":"Challenger World Shop","tab":"Special Tab","currency":"Challenge Crest","item":"Sol Erda Fragment (x10)","details":"Sol Erda Fragment (x10): Untradable, Permanent.","cost":1,"limit":"10","end":"2026-09-08"},{"id":"shop-101","shop":"Challenger World Shop","tab":"Special Tab","currency":"Challenge Crest","item":"Sol Erda","details":"Sol Erda: Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":3,"limit":"20","end":"2026-09-08"},{"id":"shop-102","shop":"Challenger World Shop","tab":"Special Tab","currency":"Challenge Crest","item":"Karma Bright Cube","details":"Karma Bright Cube: Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":1,"limit":"20","end":"2026-09-08"},{"id":"shop-103","shop":"Challenger World Shop","tab":"Special Tab","currency":"Challenge Crest","item":"(Interactive Worlds) Karma Bonus Bright Cube","details":"(Interactive Worlds) Karma Bonus Bright Cube: Tradable within world, expires September 9, 2026 at 2:00 AM UTC .","cost":2,"limit":"20","end":"2026-09-08"}]}</script>
+  <script>
+    const data = JSON.parse(document.getElementById("app-data").textContent);
+    const kromaCollectionTasks = data.kromaCollectionTasks || [];
+    const operationDiveEpisodes = data.operationDiveEpisodes || [];
+    const storeKey = "maple-v269-web-tracker";
+    const state = loadState();
+    const timelineState = { range: "week" };
+    const shopState = { selected: "all", world: "all" };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storeKey)) || {};
+        return { tasks: {}, shops: {}, purchased: {}, quests: {}, collapsedTaskSections: {}, ...saved };
+      } catch {
+        return { tasks: {}, shops: {}, purchased: {}, quests: {}, collapsedTaskSections: {} };
+      }
+    }
+    function saveState(renderNow = true) {
+      const scrollRestore = renderNow ? {
+        x: window.scrollX || 0,
+        y: window.scrollY || 0,
+        lists: Array.from(document.querySelectorAll("[data-checklist-scroll]")).map((list) => ({
+          key: list.dataset.checklistScroll,
+          top: list.scrollTop,
+        })),
+      } : null;
+      localStorage.setItem(storeKey, JSON.stringify(state));
+      document.getElementById("saveStatus").textContent = "Event tracker saved " + new Date().toLocaleString() + ".";
+      if (renderNow) {
+        render();
+        const restore = () => {
+          scrollRestore.lists.forEach(({ key, top }) => {
+            const list = document.querySelector('[data-checklist-scroll="' + key + '"]');
+            if (list) list.scrollTop = top;
+          });
+          window.scrollTo(scrollRestore.x, scrollRestore.y);
+        };
+        if (typeof requestAnimationFrame === "function") requestAnimationFrame(restore);
+        else if (typeof setTimeout === "function") setTimeout(restore, 0);
+        else restore();
+      }
+    }
+    function parseDate(value) {
+      const [y, m, d] = value.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+    function fmt(value) {
+      return parseDate(value).toISOString().slice(0, 10);
+    }
+    function daysLeft(end) {
+      return Math.ceil((parseDate(end) - today) / 86400000);
+    }
+    function isoDate(date) {
+      return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    }
+    function weekStartDate(date) {
+      const start = new Date(date);
+      const day = start.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      start.setDate(start.getDate() + diff);
+      start.setHours(0, 0, 0, 0);
+      return start;
+    }
+    function cadenceType(task) {
+      const cadence = task.cadence.toLowerCase();
+      if (cadence.includes("daily")) return "daily";
+      if (cadence.includes("weekly")) return "weekly";
+      return "ongoing";
+    }
+    function taskDoneState(task, saved = {}) {
+      const cadence = cadenceType(task);
+      if (cadence === "daily") {
+        return { cadence, done: saved.doneDate === isoDate(today), label: "Done Today" };
+      }
+      if (cadence === "weekly") {
+        return { cadence, done: saved.doneWeek === isoDate(weekStartDate(today)), label: "Done This Week" };
+      }
+      return { cadence, done: Boolean(saved.done), label: "Done" };
+    }
+    function setTaskCompletion(task, saved, checked) {
+      const cadence = cadenceType(task);
+      const next = { ...saved };
+      if (cadence === "daily") {
+        if (checked) next.doneDate = isoDate(today);
+        else delete next.doneDate;
+      } else if (cadence === "weekly") {
+        if (checked) next.doneWeek = isoDate(weekStartDate(today));
+        else delete next.doneWeek;
+      } else {
+        next.done = checked;
+      }
+      return next;
+    }
+    function syncTaskCompletionFromProgress(task, saved) {
+      const progress = Number(saved.progress || 0);
+      if (task.target && progress >= task.target) return setTaskCompletion(task, saved, true);
+      return setTaskCompletion(task, saved, false);
+    }
+    function isTallahartTask(task) {
+      return Boolean(task) && task.event === "Tallahart Fantasia" && task.task === "Daily Collection";
+    }
+    function isMechaberryPurchaseTask(task) {
+      return Boolean(task) && task.event === "Mechaberry Farm" && task.task === "Entry Pass purchases";
+    }
+    function isKromaCollectionTask(task) {
+      return Boolean(task) && task.event === "Operation: Dive" && task.task === "Kroma Pack weekly points";
+    }
+    function isOperationDiveEpisodeTask(task) {
+      return Boolean(task) && task.event === "Operation: Dive" && task.task === "Story/Episode milestones";
+    }
+    function isWeeklyCheckTask(task) {
+      return isTallahartTask(task) || isMechaberryPurchaseTask(task);
+    }
+    function weeklyCheckLimit(task) {
+      if (isTallahartTask(task)) return 5;
+      if (isMechaberryPurchaseTask(task)) return 2;
+      return 0;
+    }
+    function weeklyCheckKey() {
+      return isoDate(weekStartDate(today));
+    }
+    function weeklyTaskChecks(saved = {}) {
+      return saved.weeklyChecks?.[weeklyCheckKey()] || [];
+    }
+    function weeklyTrackedProgress(saved = {}) {
+      return Number(saved.progress || 0);
+    }
+    function kromaTaskChecks(saved = {}) {
+      return saved.kromaChecks?.[weeklyCheckKey()] || {};
+    }
+    function kromaChecklistTotal(saved = {}) {
+      const checks = kromaTaskChecks(saved);
+      return kromaCollectionTasks.reduce((total, item) => total + (checks[item.id] ? item.points : 0), 0);
+    }
+    function kromaProgress(saved = {}) {
+      return Object.prototype.hasOwnProperty.call(saved, "progress") ? Number(saved.progress || 0) : kromaChecklistTotal(saved);
+    }
+    function taskProgress(task, saved = {}) {
+      if (isWeeklyCheckTask(task)) return weeklyTrackedProgress(saved);
+      if (isKromaCollectionTask(task)) return kromaProgress(saved);
+      if (isOperationDiveEpisodeTask(task)) return operationDiveEpisodeProgress(saved);
+      return Number(saved.progress || 0);
+    }
+    function operationDiveEpisodeChecks(saved = {}) {
+      return saved.episodeChecks || {};
+    }
+    function operationDiveEpisodeChecklistTotal(saved = {}) {
+      const checks = operationDiveEpisodeChecks(saved);
+      return operationDiveEpisodes.filter((episode) => checks[episode.id]).length;
+    }
+    function operationDiveEpisodeProgress(saved = {}) {
+      if (Object.prototype.hasOwnProperty.call(saved, "progress")) return Number(saved.progress || 0);
+      return operationDiveEpisodeChecklistTotal(saved);
+    }
+    function isChallengerTask(task) {
+      return task.event.includes("Challenger") || task.event === "Arcane Seal";
+    }
+    function statusFor(start, end, progress = 0, target = 0) {
+      if (target && progress >= target) return "Done";
+      if (parseDate(end) < today) return "Ended";
+      if (parseDate(start) > today) return "Upcoming";
+      if (daysLeft(end) <= 7) return "At Risk";
+      return "Active";
+    }
+    function pill(status) {
+      const cls = status === "Done" ? "good" : status === "At Risk" ? "bad" : status === "Upcoming" ? "warn" : "";
+      return '<span class="pill ' + cls + '">' + status + "</span>";
+    }
+    function matchesSearch(text) {
+      const q = document.getElementById("search").value.trim().toLowerCase();
+      return !q || text.toLowerCase().includes(q);
+    }
+    function statusMatches(status) {
+      const filter = document.getElementById("statusFilter").value;
+      if (filter === "all") return true;
+      return status.toLowerCase().replace(" ", "") === filter || (filter === "risk" && status === "At Risk");
+    }
+    function number(value) {
+      return Number(value || 0).toLocaleString();
+    }
+    function shopClass(shop) {
+      const shops = [...new Set(data.shops.map((item) => item.shop))];
+      const index = Math.max(0, shops.indexOf(shop));
+      return "shop-" + (index % 5);
+    }
+    function shopTotal(shop, items = data.shops) {
+      return items
+        .filter((item) => shop === "all" || item.shop === shop)
+        .filter((item) => worldMatches(item))
+        .reduce((sum, item) => sum + remainingQty(item) * item.cost, 0);
+    }
+    function wantedQty(item) {
+      return Number(state.shops[item.id] || 0);
+    }
+    function purchasedQty(item) {
+      return Number(state.purchased?.[item.id] || 0);
+    }
+    function remainingQty(item) {
+      return Math.max(0, wantedQty(item) - purchasedQty(item));
+    }
+    function worldForShopItem(item) {
+      const text = (item.item + " " + item.details).toLowerCase();
+      const heroic = text.includes("heroic worlds") || text.includes("heroic only");
+      const interactive = text.includes("interactive worlds") || text.includes("interactive only");
+      if (heroic && !interactive) return "heroic";
+      if (interactive && !heroic) return "interactive";
+      if (heroic && interactive) return "both";
+      return "shared";
+    }
+    function worldMatches(item) {
+      if (shopState.world === "all") return true;
+      const world = worldForShopItem(item);
+      return world === "shared" || world === "both" || world === shopState.world;
+    }
+    function worldPill(item) {
+      const world = worldForShopItem(item);
+      const label = world === "heroic" ? "Heroic" : world === "interactive" ? "Interactive" : world === "both" ? "Both" : "Shared";
+      return '<span class="pill world ' + world + '">' + label + "</span>";
+    }
+    function pct(progress, target) {
+      return target ? Math.min(100, Math.round((progress / target) * 100)) : 0;
+    }
+    function progressCell(progress, target) {
+      const p = pct(progress, target);
+      return '<div class="row"><div class="progress"><div class="bar ' + (p >= 100 ? "good" : "") + '" style="width:' + p + '%"></div></div><span>' + p + '%</span></div>';
+    }
+    function timelineWindow(eventStart, eventEnd) {
+      const range = timelineState.range;
+      if (range === "all") {
+        return { start: new Date(eventStart), end: new Date(eventEnd), label: "all events" };
+      }
+      const dayCount = range === "month" ? 31 : 7;
+      const start = new Date(today);
+      start.setDate(today.getDate() - 1);
+      if (start < eventStart) start.setTime(eventStart.getTime());
+      const maxStart = new Date(eventEnd);
+      maxStart.setDate(eventEnd.getDate() - (dayCount - 1));
+      if (start > maxStart) start.setTime(maxStart.getTime());
+      const end = new Date(start);
+      end.setDate(start.getDate() + dayCount - 1);
+      if (end > eventEnd) end.setTime(eventEnd.getTime());
+      return { start, end, label: range === "month" ? "monthly" : "weekly" };
+    }
+    function renderDashboard() {
+      const active = data.events.filter((e) => statusFor(e.start, e.end) === "Active").length;
+      const riskTasks = data.tasks.filter((t) => {
+        const progress = taskProgress(t, state.tasks[t.id] || {});
+        return statusFor(t.start, t.end, progress, t.target) === "At Risk";
+      }).length;
+      document.getElementById("patchName").textContent = data.patchName;
+      document.getElementById("statActive").textContent = active;
+      document.getElementById("statRisk").textContent = riskTasks;
+      document.getElementById("statTasks").textContent = data.tasks.length;
+      document.getElementById("statShop").textContent = data.shops.length;
+      document.getElementById("kpiGrid").innerHTML = [
+        ["Events", data.events.length],
+        ["Active events", active],
+        ["Quest starters", data.questStarters.length],
+        ["Shop items", data.shops.length],
+      ].map(([label, value]) => '<div class="kpi"><strong>' + value + '</strong><span class="subtle">' + label + "</span></div>").join("");
+      const rows = data.tasks
+        .map((t) => {
+          const progress = taskProgress(t, state.tasks[t.id] || {});
+          return { t, progress, status: statusFor(t.start, t.end, progress, t.target) };
+        })
+        .filter((x) => x.status === "At Risk" || x.status === "Active")
+        .sort((a, b) => daysLeft(a.t.end) - daysLeft(b.t.end))
+        .slice(0, 10);
+      document.getElementById("riskTable").innerHTML = "<thead><tr><th>Event</th><th>Task</th><th>End</th><th>Progress</th><th>Status</th><th>Notes</th></tr></thead><tbody>" + rows.map(({t, progress, status}) =>
+        "<tr><td>" + t.event + "</td><td>" + t.task + "</td><td>" + fmt(t.end) + "</td><td>" + progressCell(progress, t.target) + "</td><td>" + pill(status) + '</td><td class="notes">' + t.notes + "</td></tr>"
+      ).join("") + "</tbody>";
+    }
+    function renderTimeline() {
+      const eventStart = data.events.map((event) => parseDate(event.start)).sort((a, b) => a - b)[0];
+      const eventEnd = data.events.map((event) => parseDate(event.end)).sort((a, b) => b - a)[0];
+      const { start, end, label } = timelineWindow(eventStart, eventEnd);
+      const dayCount = Math.max(1, Math.round((end - start) / 86400000) + 1);
+      const ticks = Array.from({ length: dayCount }, (_, i) => {
+        const dt = new Date(start);
+        dt.setDate(start.getDate() + i);
+        return dt;
+      });
+      const totalMs = Math.max(86400000, end - start + 86400000);
+      const timelineGrid = document.getElementById("timelineGrid");
+      timelineGrid.style.setProperty("--ticks", ticks.length);
+      timelineGrid.style.minWidth = Math.max(1280, ticks.length * 34) + "px";
+      const overlapsWindow = (event) => parseDate(event.end) >= start && parseDate(event.start) <= end;
+      const visibleEvents = data.events.filter((e) => overlapsWindow(e) && matchesSearch(e.name + e.type + e.notes) && statusMatches(statusFor(e.start, e.end)));
+      const isChallengerSpecific = (event) => event.name.includes("Challenger") || event.name === "Arcane Seal";
+      const sections = [
+        {
+          title: "Shops",
+          description: "Coin, meso, and event shop availability",
+          rows: visibleEvents.filter((event) => event.type.includes("Shop")),
+        },
+        {
+          title: "Events - Challenger World",
+          description: "Challenger-specific event systems and passes",
+          rows: visibleEvents.filter((event) => !event.type.includes("Shop") && !event.type.includes("Limited") && isChallengerSpecific(event)),
+        },
+        {
+          title: "Events - Everything Else",
+          description: "Main seasonal events, passes, and progression systems",
+          rows: visibleEvents.filter((event) => !event.type.includes("Shop") && !event.type.includes("Limited") && !isChallengerSpecific(event)),
+        },
+        {
+          title: "Limited Events",
+          description: "Short windows and scheduled bonus events",
+          rows: visibleEvents.filter((event) => event.type.includes("Limited")),
+        },
+      ];
+      const header = '<div class="time-row header"><div>Event</div><div>Type</div><div>Start</div><div>End</div><div class="weeks">' +
+        ticks.map((tick) => '<div class="week-label ' + ((tick.getDay() === 0 || tick.getDay() === 6) ? "weekend" : "") + '">' + (tick.getMonth() + 1) + "/" + tick.getDate() + "</div>").join("") + "</div></div>";
+      const eventRow = (event) => {
+        const eventWindowStart = parseDate(event.start) < start ? start : parseDate(event.start);
+        const eventWindowEnd = parseDate(event.end) > end ? end : parseDate(event.end);
+        const eventWindowEndExclusive = new Date(eventWindowEnd);
+        eventWindowEndExclusive.setDate(eventWindowEnd.getDate() + 1);
+        const todayLeft = today >= start && today <= end ? Math.max(0, Math.min(100, ((today - start) / totalMs) * 100)) : null;
+        const cls = event.type.includes("Limited") ? "Limited" : event.type.includes("Cash") ? "Cash" : event.type.includes("Shop") ? "Shop" : "";
+        const barSegment = (segmentStart, segmentEnd, extraClass = "") => {
+          if (segmentEnd <= segmentStart) return "";
+          const left = Math.max(0, ((segmentStart - start) / totalMs) * 100);
+          const width = Math.max(1.5, ((segmentEnd - segmentStart) / totalMs) * 100);
+          return '<span class="event-bar ' + cls + " " + extraClass + '" style="left:' + left + "%;width:" + width + '%"></span>';
+        };
+        const completedEnd = today < eventWindowEndExclusive ? today : eventWindowEndExclusive;
+        const activeStart = today > eventWindowStart ? today : eventWindowStart;
+        const completedBar = today > eventWindowStart ? barSegment(eventWindowStart, completedEnd, "completed") : "";
+        const activeBar = eventWindowEndExclusive > today ? barSegment(activeStart, eventWindowEndExclusive) : "";
+        return '<div class="time-row"><div>' + event.name + "</div><div>" + event.type + "</div><div>" + fmt(event.start) + "</div><div>" + fmt(event.end) + '</div><div class="lane">' + completedBar + activeBar + (todayLeft === null ? "" : '<span class="today-line" style="left:' + todayLeft + '%"></span>') + "</div></div>";
+      };
+      const rangeNote = '<div class="timeline-range-note">Showing ' + label + ' daily ticks from ' + fmt(start.toISOString().slice(0, 10)) + " through " + fmt(end.toISOString().slice(0, 10)) + " based on today (" + fmt(today.toISOString().slice(0, 10)) + ").</div>";
+      timelineGrid.innerHTML = rangeNote + sections.map((section) =>
+        '<div class="timeline-section"><div class="timeline-title">' + section.title + '<span>' + section.description + " · " + section.rows.length + " shown</span></div>" +
+        (section.rows.length ? header + section.rows.map(eventRow).join("") : '<div class="empty-section">No matching events for the current filters.</div>') +
+        "</div>"
+      ).join("");
+    }
+    function renderTasks() {
+      const rows = data.tasks
+        .map((t) => {
+          const saved = state.tasks[t.id] || {};
+          const progress = taskProgress(t, saved);
+          const status = cadenceType(t) === "ongoing" && saved.done ? "Done" : statusFor(t.start, t.end, progress, t.target);
+          return { t, saved, progress, status };
+        })
+        .filter(({t, status}) => matchesSearch(t.event + t.task + t.notes) && statusMatches(status));
+      const sectionFor = ({ t, status }) => {
+        const cadence = t.cadence.toLowerCase();
+        if (status === "At Risk") return "risk";
+        if (status === "Upcoming") return "upcoming";
+        if (status === "Done" || status === "Ended") return "complete";
+        if (cadence.includes("daily")) return "daily";
+        if (cadence.includes("weekly")) return "weekly";
+        return "ongoing";
+      };
+      const sections = [
+        { key: "risk", label: "At Risk", note: "Active items ending soon", className: "task-risk" },
+        { key: "daily", label: "Daily", note: "Daily or daily/weekly repeat tasks", className: "task-daily" },
+        { key: "weekly", label: "Weekly", note: "Weekly caps and weekly reset tasks", className: "task-weekly" },
+        { key: "upcoming", label: "Upcoming", note: "Not available yet", className: "task-upcoming", collapsible: true },
+        { key: "ongoing", label: "Ongoing / Milestones", note: "One-time, pass, level, and milestone tracking", className: "task-ongoing", collapsible: true },
+        { key: "complete", label: "Completed / Ended", note: "Finished or no longer available", className: "task-complete" },
+      ];
+      const rowMarkup = ({t, saved, progress, status}, className) => {
+        const doneState = taskDoneState(t, saved);
+        const duePill = doneState.cadence === "ongoing" ? '<span class="pill">Manual</span>' : doneState.done ? '<span class="pill good">' + doneState.label + '</span>' : '<span class="pill bad">Due</span>';
+        const weeklyChecks = isWeeklyCheckTask(t) ? weeklyTaskChecks(saved) : [];
+        const weeklyLimit = weeklyCheckLimit(t);
+        const kromaChecks = isKromaCollectionTask(t) ? kromaTaskChecks(saved) : {};
+        const kromaTotal = isKromaCollectionTask(t) ? kromaChecklistTotal(saved) : 0;
+        const episodeChecks = isOperationDiveEpisodeTask(t) ? operationDiveEpisodeChecks(saved) : {};
+        const episodeTotal = isOperationDiveEpisodeTask(t) ? operationDiveEpisodeChecklistTotal(saved) : 0;
+        const completion = isKromaCollectionTask(t)
+          ? '<div class="kroma-checks" data-checklist-scroll="kroma-' + t.id + '">' + kromaCollectionTasks.map((item) => '<label class="kroma-check"><input type="checkbox" ' + (kromaChecks[item.id] ? "checked" : "") + ' data-kroma-check="' + t.id + '" data-kroma-item="' + item.id + '"><span>' + item.label + '</span><span class="kroma-points">' + item.points + '</span></label>').join("") + '<div class="kroma-summary"><span>Checked total</span><span>' + number(kromaTotal) + " / " + number(t.target) + "</span></div></div>"
+          : isOperationDiveEpisodeTask(t)
+          ? '<div class="kroma-checks" data-checklist-scroll="episode-' + t.id + '">' + operationDiveEpisodes.map((episode) => '<label class="kroma-check"><input type="checkbox" ' + (episodeChecks[episode.id] ? "checked" : "") + ' data-episode-check="' + t.id + '" data-episode-item="' + episode.id + '"><span>' + episode.label + '</span><span class="kroma-points">' + (episodeChecks[episode.id] ? "Done" : "") + '</span></label>').join("") + '<div class="kroma-summary"><span>Episodes complete</span><span>' + episodeTotal + " / " + t.target + "</span></div></div>"
+          : isWeeklyCheckTask(t)
+          ? '<div class="weekly-checks"><div class="weekly-check-grid">' + Array.from({ length: weeklyLimit }, (_, i) => '<label class="weekly-check"><input type="checkbox" ' + (weeklyChecks[i] ? "checked" : "") + ' data-weekly-check="' + t.id + '" data-day-index="' + i + '">' + (i + 1) + "</label>").join("") + '</div><div class="weekly-check-summary">' + weeklyChecks.filter(Boolean).length + "/" + weeklyLimit + " this week</div></div>"
+          : '<label class="task-done-toggle"><input type="checkbox" ' + (doneState.done ? "checked" : "") + ' data-task-done="' + t.id + '">' + doneState.label + "</label>";
+        const progressInput = isWeeklyCheckTask(t) || isKromaCollectionTask(t) || isOperationDiveEpisodeTask(t)
+          ? '<input type="number" min="0" max="' + t.target + '" value="' + progress + '" data-task-progress="' + t.id + '">'
+          : '<input type="number" min="0" value="' + progress + '" data-task-progress="' + t.id + '">';
+        return '<tr class="task-row ' + className + '"><td>' + t.event + "</td><td>" + t.task + "</td><td>" + t.cadence + "</td><td>" + fmt(t.end) + '</td><td class="num">' + number(t.target) + '</td><td>' + progressInput + '</td><td>' + progressCell(progress, t.target) + "</td><td>" + completion + "</td><td>" + pill(status) + '</td><td>' + duePill + '</td><td class="notes">' + t.notes + "</td></tr>";
+      };
+      const worldGroups = [
+        { key: "challenger", label: "Challenger World", note: "Challenger-only systems and missions", rows: rows.filter(({t}) => isChallengerTask(t)) },
+        { key: "normal", label: "Normal Events", note: "Main seasonal, shared, and limited event tasks", rows: rows.filter(({t}) => !isChallengerTask(t)) },
+      ];
+      const body = worldGroups.map((world) => {
+        if (!world.rows.length) return "";
+        const worldHeader = '<tr class="task-world-row"><td colspan="11"><div class="task-section"><strong>' + world.label + '</strong><span>' + world.note + " - " + world.rows.length + " shown</span></div></td></tr>";
+        const groupedRows = sections.map((section) => {
+          const items = world.rows.filter((row) => sectionFor(row) === section.key);
+          if (!items.length) return "";
+          const collapseKey = world.key + ":" + section.key;
+          const collapsed = Boolean(state.collapsedTaskSections?.[collapseKey]);
+          const toggle = section.collapsible ? '<button class="section-toggle" type="button" data-task-section-toggle="' + collapseKey + '" aria-label="' + (collapsed ? "Expand " : "Collapse ") + section.label + '">' + (collapsed ? "+" : "-") + "</button>" : "";
+          const sectionHeader = '<tr class="task-section-row ' + section.className + '"><td colspan="11"><div class="task-section"><div class="task-section-main">' + toggle + '<strong>' + section.label + '</strong></div><span>' + section.note + " - " + items.length + (collapsed ? " hidden" : " shown") + "</span></div></td></tr>";
+          return sectionHeader + (collapsed ? "" : items.map((item) => rowMarkup(item, section.className)).join(""));
+        }).join("");
+        return worldHeader + groupedRows;
+      }).join("");
+      document.getElementById("taskTable").innerHTML = "<thead><tr><th>Event</th><th>Task</th><th>Cadence</th><th>End</th><th>Target</th><th>Progress</th><th>%</th><th>Completion</th><th>Status</th><th>Due</th><th>Notes</th></tr></thead><tbody>" + (body || '<tr><td colspan="11" class="details">No tracker items match the current filters.</td></tr>') + "</tbody>";
+    }
+    function renderQuests() {
+      const questRows = data.questStarters.map((q) => ({
+        ...q,
+        done: Boolean(state.quests[q.id]),
+        status: statusFor(q.start, q.end, state.quests[q.id] ? 1 : 0, 1),
+      }));
+      const summary = {
+        done: questRows.filter((q) => q.done).length,
+        active: questRows.filter((q) => q.status === "Active").length,
+        upcoming: questRows.filter((q) => q.status === "Upcoming").length,
+        risk: questRows.filter((q) => q.status === "At Risk").length,
+        ended: questRows.filter((q) => q.status === "Ended").length,
+      };
+      document.getElementById("questSummary").innerHTML = [
+        ["Done", summary.done],
+        ["Active", summary.active],
+        ["Upcoming", summary.upcoming],
+        ["At risk", summary.risk],
+        ["Ended", summary.ended],
+      ].map(([label, value]) => '<div class="kpi"><strong>' + value + '</strong><span class="subtle">' + label + "</span></div>").join("");
+      const visible = questRows
+        .filter((q) => matchesSearch(q.event + q.starter) && statusMatches(q.status));
+      const columns = [
+        { key: "At Risk", label: "At Risk", className: "risk" },
+        { key: "Active", label: "Active", className: "" },
+        { key: "Upcoming", label: "Upcoming", className: "upcoming" },
+        { key: "Ended", label: "Ended", className: "ended" },
+        { key: "Done", label: "Done", className: "done" },
+      ];
+      const cardMarkup = (q) => {
+          const checked = state.quests[q.id] ? "checked" : "";
+          const cls = q.done ? "done" : q.status === "Upcoming" ? "upcoming" : q.status === "At Risk" ? "risk" : q.status === "Ended" ? "ended" : "";
+          const dayText = q.status === "Done" ? "Completed" : q.status === "Upcoming" ? "Starts in " + Math.max(0, Math.ceil((parseDate(q.start) - today) / 86400000)) + " days" : q.status === "Ended" ? "Ended" : daysLeft(q.end) + " days left";
+          return '<article class="quest-card ' + cls + '"><div class="quest-head"><div><strong>' + q.event + '</strong><div class="quest-meta"><span>' + fmt(q.start) + " to " + fmt(q.end) + "</span><span>" + dayText + '</span></div></div>' + pill(q.status) + '</div><div class="quest-starter">' + q.starter + '</div><label class="quest-check"><input type="checkbox" ' + checked + ' data-quest="' + q.id + '">Done</label></article>';
+      };
+      document.getElementById("questBoard").innerHTML = visible.length ? columns.map((column) => {
+        const cards = visible.filter((q) => q.status === column.key);
+        return '<section class="quest-column"><div class="quest-column-head">' + column.label + '<span>' + cards.length + '</span></div><div class="quest-column-body">' + (cards.length ? cards.map(cardMarkup).join("") : '<div class="empty-section">No items.</div>') + "</div></section>";
+      }).join("") : '<div class="empty-section">No quest starters match the current filters.</div>';
+    }
+    function renderShops() {
+      const currency = document.getElementById("currencyFilter").value;
+      const rows = data.shops
+        .filter((s) => worldMatches(s))
+        .filter((s) => shopState.selected === "all" || s.shop === shopState.selected)
+        .filter((s) => currency === "all" || s.currency === currency)
+        .filter((s) => matchesSearch(s.shop + s.tab + s.currency + s.item + s.details));
+      const totals = {};
+      for (const item of data.shops.filter((shopItem) => worldMatches(shopItem))) {
+        totals[item.currency] = (totals[item.currency] || 0) + remainingQty(item) * item.cost;
+      }
+      document.getElementById("currencyTotals").innerHTML = Object.entries(totals).map(([cur, value]) => '<div class="kpi"><strong>' + number(value) + '</strong><span class="subtle">' + cur + " remaining</span></div>").join("");
+      const shops = [...new Set(data.shops.map((item) => item.shop))];
+      const allItems = data.shops.filter((item) => worldMatches(item)).length;
+      const allTotal = shopTotal("all");
+      document.getElementById("shopTabs").innerHTML = [
+        '<button class="shop-tab all ' + (shopState.selected === "all" ? "active" : "") + '" type="button" data-shop-tab="all"><strong>All Shops</strong><span>' + allItems + " items - remaining total " + number(allTotal) + "</span></button>",
+        ...shops.map((shop) => {
+          const items = data.shops.filter((item) => item.shop === shop && worldMatches(item));
+          const cls = shopClass(shop);
+          return '<button class="shop-tab ' + cls + " " + (shopState.selected === shop ? "active" : "") + '" type="button" data-shop-tab="' + shop + '"><strong>' + shop + '</strong><span>' + items.length + " items - remaining total " + number(shopTotal(shop, items)) + "</span></button>";
+        }),
+      ].join("");
+      const grouped = rows.reduce((acc, item) => {
+        if (!acc.has(item.shop)) acc.set(item.shop, []);
+        acc.get(item.shop).push(item);
+        return acc;
+      }, new Map());
+      const groupMarkup = [...grouped.entries()].map(([shop, items]) => {
+        const currencies = [...new Set(items.map((item) => item.currency))].join(", ");
+        const shopTotal = items.reduce((sum, item) => sum + remainingQty(item) * item.cost, 0);
+        const cls = shopClass(shop);
+        const header = '<tr class="shop-group-row ' + cls + '"><td colspan="13"><div class="shop-group"><strong>' + shop + '</strong><span>' + items.length + " items - " + currencies + " - remaining total " + number(shopTotal) + "</span></div></td></tr>";
+        return header + items.map((s) => {
+          const want = wantedQty(s);
+          const purchased = purchasedQty(s);
+          const remaining = remainingQty(s);
+          return '<tr class="shop-row ' + cls + '"><td>' + s.shop + "</td><td>" + s.tab + "</td><td>" + s.currency + "</td><td>" + worldPill(s) + "</td><td>" + s.item + '</td><td class="num">' + number(s.cost) + '</td><td>' + s.limit + '</td><td><input type="number" min="0" value="' + want + '" data-shop="' + s.id + '"></td><td><input type="number" min="0" value="' + purchased + '" data-shop-purchased="' + s.id + '"></td><td class="num">' + number(remaining) + '</td><td class="num">' + number(remaining * s.cost) + "</td><td>" + fmt(s.end) + '</td><td class="details">' + s.details + "</td></tr>";
+        }).join("");
+      }).join("");
+      document.getElementById("shopTable").innerHTML = "<thead><tr><th>Shop</th><th>Tab</th><th>Currency</th><th>World</th><th>Item</th><th>Cost</th><th>Limit</th><th>Want</th><th>Purchased</th><th>Left</th><th>Remaining Total</th><th>End</th><th>Details</th></tr></thead><tbody>" + (groupMarkup || '<tr><td colspan="13" class="details">No shop items match the current filters.</td></tr>') + "</tbody>";
+    }
+    function renderCurrencyFilter() {
+      const select = document.getElementById("currencyFilter");
+      if (select.options.length > 1) return;
+      [...new Set(data.shops.map((s) => s.currency))].forEach((currency) => {
+        const option = document.createElement("option");
+        option.value = currency;
+        option.textContent = currency;
+        select.appendChild(option);
+      });
+    }
+    function render() {
+      renderCurrencyFilter();
+      renderDashboard();
+      renderTimeline();
+      renderTasks();
+      renderQuests();
+      renderShops();
+    }
+    document.querySelectorAll(".tab").forEach((button) => button.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".view").forEach((v) => v.classList.add("hidden"));
+      button.classList.add("active");
+      document.getElementById(button.dataset.tab).classList.remove("hidden");
+    }));
+    document.querySelectorAll("[data-timeline-range]").forEach((button) => button.addEventListener("click", () => {
+      timelineState.range = button.dataset.timelineRange;
+      document.querySelectorAll("[data-timeline-range]").forEach((item) => item.classList.toggle("active", item === button));
+      renderTimeline();
+    }));
+    document.addEventListener("click", (event) => {
+      const shopButton = event.target.closest("[data-shop-tab]");
+      if (!shopButton) return;
+      shopState.selected = shopButton.dataset.shopTab;
+      renderShops();
+    });
+    document.addEventListener("click", (event) => {
+      const toggle = event.target.closest("[data-task-section-toggle]");
+      if (!toggle) return;
+      const key = toggle.dataset.taskSectionToggle;
+      state.collapsedTaskSections = state.collapsedTaskSections || {};
+      if (state.collapsedTaskSections[key]) delete state.collapsedTaskSections[key];
+      else state.collapsedTaskSections[key] = true;
+      saveState();
+    });
+    document.querySelectorAll("[data-world-filter]").forEach((button) => button.addEventListener("click", () => {
+      shopState.world = button.dataset.worldFilter;
+      document.querySelectorAll("[data-world-filter]").forEach((item) => item.classList.toggle("active", item === button));
+      renderShops();
+    }));
+    function updateNumericInputState(target) {
+      const taskId = target.dataset.taskProgress;
+      const shopId = target.dataset.shop;
+      const shopPurchasedId = target.dataset.shopPurchased;
+      if (taskId) {
+        const task = data.tasks.find((item) => item.id === taskId);
+        let saved = { ...(state.tasks[taskId] || {}), progress: Number(target.value || 0) };
+        if (task && !isWeeklyCheckTask(task)) saved = syncTaskCompletionFromProgress(task, saved);
+        if (task && isWeeklyCheckTask(task) && saved.progress >= task.target) {
+          const weekKey = weeklyCheckKey();
+          saved.weeklyChecks = { ...(saved.weeklyChecks || {}), [weekKey]: Array.from({ length: weeklyCheckLimit(task) }, () => true) };
+          saved.doneWeek = weekKey;
+        }
+        state.tasks[taskId] = saved;
+        return true;
+      }
+      if (shopId) {
+        state.shops[shopId] = Number(target.value || 0);
+        return true;
+      }
+      if (shopPurchasedId) {
+        state.purchased = state.purchased || {};
+        state.purchased[shopPurchasedId] = Number(target.value || 0);
+        return true;
+      }
+      return false;
+    }
+    document.addEventListener("input", (event) => {
+      if (updateNumericInputState(event.target)) {
+        saveState(false);
+        return;
+      }
+      if (event.target.id === "search" || event.target.id === "statusFilter" || event.target.id === "currencyFilter") render();
+    });
+    document.addEventListener("change", (event) => {
+      if (updateNumericInputState(event.target)) {
+        saveState();
+        return;
+      }
+      const questId = event.target.dataset.quest;
+      const taskDoneId = event.target.dataset.taskDone;
+      const weeklyCheckId = event.target.dataset.weeklyCheck;
+      const kromaCheckId = event.target.dataset.kromaCheck;
+      const episodeCheckId = event.target.dataset.episodeCheck;
+      if (questId) {
+        state.quests[questId] = event.target.checked;
+        saveState();
+      }
+      if (taskDoneId) {
+        const task = data.tasks.find((item) => item.id === taskDoneId);
+        const saved = { ...(state.tasks[taskDoneId] || {}) };
+        const next = setTaskCompletion(task, saved, event.target.checked);
+        if (event.target.checked) next.progress = task.target || Number(next.progress || 0);
+        else next.progress = 0;
+        state.tasks[taskDoneId] = next;
+        saveState();
+      }
+      if (weeklyCheckId) {
+        const index = Number(event.target.dataset.dayIndex);
+        const task = data.tasks.find((item) => item.id === weeklyCheckId);
+        const saved = { ...(state.tasks[weeklyCheckId] || {}) };
+        const weekKey = weeklyCheckKey();
+        const weeklyLimit = weeklyCheckLimit(task);
+        const weeklyChecks = [...(saved.weeklyChecks?.[weekKey] || [])];
+        const wasChecked = Boolean(weeklyChecks[index]);
+        weeklyChecks[index] = event.target.checked;
+        saved.weeklyChecks = { ...(saved.weeklyChecks || {}), [weekKey]: weeklyChecks };
+        const delta = event.target.checked && !wasChecked ? 1 : !event.target.checked && wasChecked ? -1 : 0;
+        saved.progress = Math.max(0, Math.min(task?.target || 0, Number(saved.progress || 0) + delta));
+        if (weeklyChecks.filter(Boolean).length >= weeklyLimit) saved.doneWeek = weekKey;
+        else delete saved.doneWeek;
+        state.tasks[weeklyCheckId] = saved;
+        saveState();
+      }
+      if (kromaCheckId) {
+        const itemId = event.target.dataset.kromaItem;
+        const task = data.tasks.find((item) => item.id === kromaCheckId);
+        const saved = { ...(state.tasks[kromaCheckId] || {}) };
+        const weekKey = weeklyCheckKey();
+        const checks = { ...(saved.kromaChecks?.[weekKey] || {}) };
+        checks[itemId] = event.target.checked;
+        saved.kromaChecks = { ...(saved.kromaChecks || {}), [weekKey]: checks };
+        saved.progress = kromaChecklistTotal(saved);
+        const next = syncTaskCompletionFromProgress(task, saved);
+        state.tasks[kromaCheckId] = next;
+        saveState();
+      }
+      if (episodeCheckId) {
+        const itemId = event.target.dataset.episodeItem;
+        const task = data.tasks.find((item) => item.id === episodeCheckId);
+        const saved = { ...(state.tasks[episodeCheckId] || {}) };
+        const checks = { ...(saved.episodeChecks || {}) };
+        checks[itemId] = event.target.checked;
+        saved.episodeChecks = checks;
+        saved.progress = operationDiveEpisodeChecklistTotal(saved);
+        const next = syncTaskCompletionFromProgress(task, saved);
+        state.tasks[episodeCheckId] = next;
+        saveState();
+      }
+    });
+    document.getElementById("clearTasks").addEventListener("click", () => {
+      state.tasks = {};
+      saveState();
+    });
+    document.getElementById("clearShop").addEventListener("click", () => {
+      state.shops = {};
+      state.purchased = {};
+      saveState();
+    });
+    function exportEventProgress() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ride-the-lightning-progress.json";
+      a.click();
+      URL.revokeObjectURL(url);
+      document.getElementById("saveStatus").textContent = "Event tracker exported " + new Date().toLocaleString() + ".";
+    }
+    function importEventProgress() {
+      document.getElementById("importFile").click();
+    }
+    document.getElementById("exportBtn").addEventListener("click", exportEventProgress);
+    document.getElementById("importBtn").addEventListener("click", importEventProgress);
+    document.getElementById("importFile").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const imported = JSON.parse(await file.text());
+      state.tasks = imported.tasks || {};
+      state.shops = imported.shops || {};
+      state.purchased = imported.purchased || {};
+      state.quests = imported.quests || {};
+      saveState();
+      event.target.value = "";
+    });
+    window.addEventListener("message", (event) => {
+      if (location.protocol !== "file:" && event.origin !== location.origin) return;
+      if (event.data?.type === "maple-export-current") exportEventProgress();
+      if (event.data?.type === "maple-import-current") importEventProgress();
+    });
+    render();
+  </script>
+</body>
+</html>
