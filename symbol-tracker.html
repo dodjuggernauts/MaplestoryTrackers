@@ -1,0 +1,1399 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Symbol Tracker</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --panel-2: #f8fbfe;
+      --ink: #16212f;
+      --muted: #5d6c7d;
+      --line: #d9e1eb;
+      --nav: #16202e;
+      --accent: #2a768e;
+      --accent-2: #8b5c2f;
+      --good: #2f7d45;
+      --warn: #a86f00;
+      --shadow: 0 10px 30px rgba(21, 32, 43, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(42, 118, 142, 0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(139, 92, 47, 0.12), transparent 22%),
+        var(--bg);
+    }
+
+    button, input, select { font: inherit; }
+
+    .shell {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .hero {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #18212f 0%, #101722 100%);
+      color: #f7fbff;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+      gap: 18px;
+      padding: 24px;
+      align-items: start;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      margin: 10px 0 0;
+      max-width: 68ch;
+      color: #b7c2d1;
+      line-height: 1.55;
+    }
+
+    .hero-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      color: #f7fbff;
+      font-weight: 700;
+    }
+
+    .hero-card {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      padding: 18px;
+    }
+
+    .hero-card h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .hero-card .big {
+      display: block;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.05;
+      margin-bottom: 6px;
+    }
+
+    .hero-card .small {
+      color: #b7c2d1;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .content {
+      display: grid;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .view-tabs {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #edf2f7;
+    }
+
+    .view-tab {
+      min-height: 36px;
+      padding: 0 14px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: #405164;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .view-tab.active {
+      background: #fff;
+      color: var(--nav);
+      border-color: var(--line);
+      box-shadow: 0 1px 4px rgba(21, 32, 43, 0.08);
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .view { display: grid; gap: 18px; }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      background: var(--panel-2);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h2,
+    .panel-head h3 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.15;
+    }
+
+    .subtle { color: var(--muted); }
+
+    .panel-body { padding: 16px; }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1.8fr 0.8fr 0.8fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .tracker-layout {
+      display: grid;
+      gap: 16px;
+    }
+
+    .tracker-toolbar {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      width: min(100%, 920px);
+      margin: 0 auto;
+    }
+
+    .symbol-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(104px, 118px));
+      gap: 10px;
+      justify-content: center;
+      width: min(100%, 920px);
+      margin: 0 auto;
+    }
+
+    .symbol-card {
+      display: grid;
+      gap: 6px;
+      align-content: start;
+      justify-items: center;
+      min-height: 108px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, #fff 0%, #f7fbfe 100%);
+      color: var(--ink);
+      cursor: pointer;
+      text-align: left;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset;
+    }
+
+    .symbol-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(21, 32, 43, 0.08);
+    }
+
+    .symbol-card.active {
+      border-color: var(--nav);
+      box-shadow: 0 0 0 2px rgba(22, 32, 46, 0.08), 0 10px 24px rgba(21, 32, 43, 0.1);
+    }
+
+    .symbol-art {
+      display: grid;
+      place-items: center;
+      min-height: 48px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top, rgba(42, 118, 142, 0.12), rgba(255,255,255,0.8));
+    }
+
+    .symbol-art img {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      image-rendering: auto;
+    }
+
+    .symbol-card strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .symbol-card .level {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .symbol-card .family-note {
+      display: none;
+    }
+
+    .selection-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+      gap: 12px;
+    }
+
+    .selection-card {
+      display: grid;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      padding: 14px;
+      width: min(100%, 520px);
+      justify-self: center;
+    }
+
+    .selection-card h3 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .selected-symbol {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+    }
+
+    .selected-symbol .symbol-art {
+      min-height: 72px;
+      background: #f4f8fc;
+    }
+
+    .selected-symbol .symbol-art img {
+      width: 56px;
+      height: 56px;
+    }
+
+    .selected-meta {
+      display: grid;
+      gap: 6px;
+    }
+
+    .selected-kicker {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .selected-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .selected-stat {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-2);
+      padding: 10px 12px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .selected-stat strong {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .selected-stat span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pace-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pace-button {
+      min-height: 34px;
+      padding: 0 12px;
+      font-weight: 800;
+    }
+
+    .pace-button.active {
+      background: var(--nav);
+      color: #fff;
+      border-color: var(--nav);
+    }
+
+    .pace-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 800;
+      color: #516172;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .segmented {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 14px;
+      background: #edf2f7;
+      border: 1px solid var(--line);
+    }
+
+    .segment,
+    .area-button,
+    .mini-button,
+    .compact-button {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .segment {
+      min-height: 36px;
+      padding: 0 14px;
+      font-weight: 800;
+      background: transparent;
+      border-color: transparent;
+    }
+
+    .segment.active,
+    .area-button.active {
+      background: var(--nav);
+      color: #fff;
+      border-color: var(--nav);
+    }
+
+    .area-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+    }
+
+    .area-button {
+      min-height: 72px;
+      padding: 10px 12px;
+      text-align: left;
+      display: grid;
+      gap: 5px;
+      align-content: start;
+    }
+
+    .area-button strong {
+      font-size: 15px;
+      line-height: 1.15;
+    }
+
+    .area-button span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    input[type="number"] {
+      min-height: 40px;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0 12px;
+      background: #fff;
+      color: var(--ink);
+      text-align: right;
+    }
+
+    .selection-card input[type="number"] {
+      max-width: 220px;
+    }
+
+    .max-date-box {
+      display: grid;
+      gap: 4px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-2);
+    }
+
+    .max-date-box strong {
+      font-size: 17px;
+      line-height: 1.1;
+    }
+
+    .max-date-box span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .summary-box-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-box {
+      display: grid;
+      gap: 4px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-2);
+    }
+
+    .summary-box strong {
+      font-size: 17px;
+      line-height: 1.1;
+    }
+
+    .summary-box span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      padding: 14px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .stat strong {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      padding: 14px;
+    }
+
+    .summary-card strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+
+    .summary-card span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .progress-wrap {
+      display: grid;
+      gap: 8px;
+    }
+
+    .progress {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e8eef4;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), #3a9ab7);
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #edf2f7;
+      color: #324254;
+      font-size: 13px;
+      z-index: 1;
+    }
+
+    tr.done td { color: #7d8896; background: #f7f9fb; }
+    tr.active td { background: #eef6fb; }
+
+    td.num, th.num { text-align: right; }
+
+    .overview-table-wrap {
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+
+    .overview-table th,
+    .overview-table td {
+      vertical-align: top;
+    }
+
+    .overview-table th:nth-child(n+2),
+    .overview-table td:nth-child(n+2) {
+      text-align: center;
+    }
+
+    .cell-title {
+      display: block;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .cell-subtitle {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      margin-top: 2px;
+    }
+
+    .overview-table td.wrap {
+      white-space: normal;
+      min-width: 220px;
+    }
+
+    .overview-table td:nth-child(n+2).wrap {
+      min-width: 170px;
+    }
+
+    .empty {
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .hidden { display: none !important; }
+
+    .compact-button {
+      min-height: 36px;
+      padding: 0 12px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 1080px) {
+      .hero-inner,
+      .control-grid,
+      .selection-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 700px) {
+      .shell { padding: 12px; }
+      .hero-inner { padding: 18px; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .tracker-toolbar { align-items: start; flex-direction: column; }
+      .selected-stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="hero-inner">
+        <div>
+          <h1>Symbol Tracker</h1>
+          <p>
+            Pick a symbol area, enter your current level and current symbol exp, and the tracker
+            will calculate what is left to max it based on the wiki reward baselines and the area-specific
+            meso costs.
+          </p>
+          <div class="hero-chip-row" id="typeChips"></div>
+        </div>
+        <div class="hero-card">
+          <h2 id="heroAreaName">Area</h2>
+          <span class="big" id="heroRemaining">0 symbols left</span>
+          <div class="small" id="heroMeta">Select an area to see the baseline daily and weekly gains.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="content">
+      <div class="view-tabs" role="tablist" aria-label="Symbol tracker sections">
+        <button class="view-tab active" id="trackerTab" type="button" data-view="tracker" role="tab" aria-selected="true">Tracker</button>
+        <button class="view-tab" id="handbookTab" type="button" data-view="handbook" role="tab" aria-selected="false">Handbook</button>
+      </div>
+
+      <section class="view" id="trackerView">
+        <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Tracker Inputs</h2>
+            <div class="subtle">Choose a symbol up top, then edit its level, exp, and gain preset below.</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="tracker-layout">
+            <div class="field">
+              <div class="tracker-toolbar">
+                <div class="field">
+                  <label>Symbol Family</label>
+                  <div class="segmented" id="familyButtons"></div>
+                </div>
+                <div class="subtle" id="familyHint">Arcane and Sacred families each have their own symbol set and cost curve.</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Symbols</label>
+              <div class="symbol-grid" id="areaButtons"></div>
+            </div>
+            <section class="selection-card">
+                <div class="field">
+                  <label for="levelInput">Current Level</label>
+                  <input id="levelInput" type="number" min="1" step="1">
+                </div>
+                <div class="field">
+                  <label for="expInput">Current Symbol Exp</label>
+                  <input id="expInput" type="number" min="0" step="1">
+                </div>
+                <div class="field">
+                  <label>Gain Preset</label>
+                  <div class="pace-row" id="paceButtons"></div>
+                </div>
+                <div class="subtle" id="paceDescription">Toggle any combination of Daily, Weekly, and Extra to build the remaining-time estimate.</div>
+                <div class="summary-box-grid">
+                  <div class="summary-box">
+                    <strong id="maxDateText">N/A</strong>
+                    <span id="maxDateSummary">Longest symbol projection</span>
+                  </div>
+                  <div class="summary-box">
+                    <strong id="remainingMesoText">0 meso</strong>
+                    <span id="remainingMesoSummary">Total remaining meso needed</span>
+                  </div>
+                </div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Symbol Overview</h2>
+            <div class="subtle">One row per symbol with the current level and total remaining work.</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="overview-table-wrap">
+            <table class="overview-table" id="overviewTable"></table>
+          </div>
+        </div>
+      </section>
+      </section>
+
+      <section class="view hidden" id="handbookView">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Cost Table</h2>
+              <div class="subtle">Area-specific meso costs based on the wiki tables.</div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="table-wrap">
+              <table id="costTable"></table>
+            </div>
+          </div>
+        </section>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const SYMBOL_DATA = {
+      arcane: {
+        name: "Arcane Symbols",
+        maxLevel: 20,
+        symbolFormula: (level) => level * level + 11,
+        areas: [
+          {
+            id: "vanishing-journey",
+            name: "Vanishing Journey",
+            image: "assets/symbols/arcane-vanishing-journey.png",
+            dailyLabel: "Vanishing Journey Research",
+            dailyReward: 10,
+            dailyNote: "10 symbols per day, or 20 after Reverse City.",
+            weeklyLabel: "Erda Spectrum",
+            weeklyReward: 120,
+            weeklyNote: "40 symbols per clear, up to 3 clears per week.",
+            extraLabel: "Reverse City unlocked",
+            extraReward: 10,
+            extraNote: "Adds 10 more daily symbols after Reverse City.",
+            costBase: 8.0,
+            costNote: "Includes the standard Arcane Symbol costs. The wiki also lists a mentor-system column for this area.",
+          },
+          {
+            id: "chu-chu",
+            name: "Chu Chu Island",
+            image: "assets/symbols/arcane-chu-chu.png",
+            dailyLabel: "Chu Chu's Finest Cuisine",
+            dailyReward: 10,
+            dailyNote: "10 symbols per day, increased to 20 after Yum Yum.",
+            weeklyLabel: "Hungry Muto",
+            weeklyReward: 120,
+            weeklyNote: "40 symbols per clear, up to 3 clears per week.",
+            extraLabel: "Yum Yum unlocked",
+            extraReward: 10,
+            extraNote: "Adds 10 more daily symbols after Yum Yum.",
+            costBase: 10.0,
+            costNote: "Standard Chu Chu Island cost table.",
+          },
+          {
+            id: "lachelein",
+            name: "Lachelein",
+            image: "assets/symbols/arcane-lachelein.png",
+            dailyLabel: "A Night's Peace in Lachelein",
+            dailyReward: 20,
+            dailyNote: "20 symbols per day.",
+            weeklyLabel: "Midnight Chaser",
+            weeklyReward: 120,
+            weeklyNote: "40 symbols per clear, up to 3 clears per week.",
+            extraLabel: "No extra baseline",
+            extraReward: 0,
+            extraNote: "There is no extra daily unlock noted on the wiki.",
+            costBase: 12.0,
+            costNote: "Standard Lachelein cost table.",
+          },
+          {
+            id: "arcana",
+            name: "Arcana",
+            image: "assets/symbols/arcane-arcana.png",
+            dailyLabel: "Peace in Arcana",
+            dailyReward: 20,
+            dailyNote: "20 symbols per day.",
+            weeklyLabel: "Spirit Savior",
+            weeklyReward: 120,
+            weeklyNote: "40 symbols per clear, up to 3 clears per week.",
+            extraLabel: "No extra baseline",
+            extraReward: 0,
+            extraNote: "There is no extra daily unlock noted on the wiki.",
+            costBase: 14.0,
+            costNote: "Standard Arcana cost table.",
+          },
+          {
+            id: "morass",
+            name: "Morass",
+            image: "assets/symbols/arcane-morass.png",
+            dailyLabel: "Save the Morass",
+            dailyReward: 20,
+            dailyNote: "20 symbols per day.",
+            weeklyLabel: "Ranheim Defense",
+            weeklyReward: 120,
+            weeklyNote: "40 symbols per clear, up to 3 clears per week.",
+            extraLabel: "No extra baseline",
+            extraReward: 0,
+            extraNote: "There is no extra daily unlock noted on the wiki.",
+            costBase: 16.0,
+            costNote: "Standard Morass cost table.",
+          },
+          {
+            id: "esfera",
+            name: "Esfera",
+            image: "assets/symbols/arcane-esfera.png",
+            dailyLabel: "Esfera Research Orders",
+            dailyReward: 20,
+            dailyNote: "20 symbols per day.",
+            weeklyLabel: "Esfera Guardian",
+            weeklyReward: 120,
+            weeklyNote: "40 symbols per clear, up to 3 clears per week.",
+            extraLabel: "No extra baseline",
+            extraReward: 0,
+            extraNote: "There is no extra daily unlock noted on the wiki.",
+            costBase: 18.0,
+            costNote: "Standard Esfera cost table.",
+          },
+        ],
+      },
+      sacred: {
+        name: "Sacred Symbols",
+        maxLevel: 11,
+        symbolFormula: (level) => (9 * level * level) + (20 * level),
+        areas: [
+          {
+            id: "cernium",
+            name: "Cernium",
+            image: "assets/symbols/sacred-cernium.png",
+            dailyLabel: "Cernium Research",
+            dailyReward: 20,
+            dailyNote: "20 symbols per day.",
+            weeklyLabel: "No weekly symbol quest",
+            weeklyReward: 0,
+            weeklyNote: "The wiki page does not list a weekly symbol reward.",
+            extraLabel: "No extra baseline",
+            extraReward: 0,
+            extraNote: "No extra daily unlock is listed on the wiki.",
+            costBase: 13.2,
+            costNote: "Standard Cernium cost table.",
+          },
+          {
+            id: "arcus",
+            name: "Hotel Arcus",
+            image: "assets/symbols/sacred-arcus.png",
+            dailyLabel: "Clean Up Around Hotel Arcus",
+            dailyReward: 10,
+            dailyNote: "10 symbols per day.",
+            weeklyLabel: "No weekly symbol quest",
+            weeklyReward: 0,
+            weeklyNote: "The wiki page does not list a weekly symbol reward.",
+            extraLabel: "No extra baseline",
+            extraReward: 0,
+            extraNote: "No extra daily unlock is listed on the wiki.",
+            costBase: 15.0,
+            costNote: "Standard Hotel Arcus cost table.",
+          },
+          {
+            id: "odium",
+            name: "Odium",
+            image: "assets/symbols/sacred-odium.png",
+            dailyLabel: "Odium Area Expedition",
+            dailyReward: 10,
+            dailyNote: "10 symbols per day.",
+            weeklyLabel: "No weekly symbol quest",
+            weeklyReward: 0,
+            weeklyNote: "The wiki page does not list a weekly symbol reward.",
+            extraLabel: "No extra baseline",
+            extraReward: 0,
+            extraNote: "No extra daily unlock is listed on the wiki.",
+            costBase: 16.8,
+            costNote: "Standard Odium cost table.",
+          },
+          {
+            id: "shangri-la",
+            name: "Shangri-La",
+            image: "assets/symbols/sacred-shangri-la.png",
+            dailyLabel: "Shangri-La Contamination Purification",
+            dailyReward: 10,
+            dailyNote: "10 symbols per day.",
+            weeklyLabel: "No weekly symbol quest",
+            weeklyReward: 0,
+            weeklyNote: "The wiki page does not list a weekly symbol reward.",
+            extraLabel: "No extra baseline",
+            extraReward: 0,
+            extraNote: "No extra daily unlock is listed on the wiki.",
+            costBase: 18.6,
+            costNote: "Standard Shangri-La cost table.",
+          },
+          {
+            id: "arteria",
+            name: "Arteria",
+            image: "assets/symbols/sacred-arteria.png",
+            dailyLabel: "Defeat the Arteria Remnants",
+            dailyReward: 10,
+            dailyNote: "10 symbols per day.",
+            weeklyLabel: "No weekly symbol quest",
+            weeklyReward: 0,
+            weeklyNote: "The wiki page does not list a weekly symbol reward.",
+            extraLabel: "No extra baseline",
+            extraReward: 0,
+            extraNote: "No extra daily unlock is listed on the wiki.",
+            costBase: 20.4,
+            costNote: "Standard Arteria cost table.",
+          },
+          {
+            id: "carcion",
+            name: "Carcion",
+            image: "assets/symbols/sacred-carcion.png",
+            dailyLabel: "Carcion Recovery Support",
+            dailyReward: 10,
+            dailyNote: "10 symbols per day.",
+            weeklyLabel: "No weekly symbol quest",
+            weeklyReward: 0,
+            weeklyNote: "The wiki page does not list a weekly symbol reward.",
+            extraLabel: "No extra baseline",
+            extraReward: 0,
+            extraNote: "No extra daily unlock is listed on the wiki.",
+            costBase: 22.2,
+            costNote: "Standard Carcion cost table.",
+          },
+        ],
+      },
+    };
+
+    const storageKey = "maplestory-symbol-tracker-v4";
+    const byId = (id) => document.getElementById(id);
+    const state = loadState();
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        return {
+          familyKey: saved.familyKey === "sacred" ? "sacred" : "arcane",
+          areaId: typeof saved.areaId === "string" ? saved.areaId : "vanishing-journey",
+          view: saved.view === "handbook" ? "handbook" : "tracker",
+          profiles: saved.profiles && typeof saved.profiles === "object" ? saved.profiles : {},
+        };
+      } catch (_) {
+        return {
+          familyKey: "arcane",
+          areaId: "vanishing-journey",
+          view: "tracker",
+          profiles: {},
+        };
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    }
+
+    function getFamily() {
+      return SYMBOL_DATA[state.familyKey] || SYMBOL_DATA.arcane;
+    }
+
+    function getAreaList() {
+      return getFamily().areas;
+    }
+
+    function getArea() {
+      const areas = getAreaList();
+      const resolved = areas.find((area) => area.id === state.areaId) || areas[0];
+      if (resolved && resolved.id !== state.areaId) {
+        state.areaId = resolved.id;
+      }
+      return resolved;
+    }
+
+    function getProfile(areaId = state.areaId) {
+      if (!state.profiles[areaId]) {
+        const area = getAreaList().find((entry) => entry.id === areaId) || getAreaList()[0];
+        state.profiles[areaId] = {
+          level: 1,
+          exp: 0,
+          gains: {
+            daily: true,
+            weekly: (area?.weeklyReward || 0) > 0,
+            extra: (area?.extraReward || 0) > 0,
+          },
+        };
+      }
+      return state.profiles[areaId];
+    }
+
+    function clampProfile(profile, area) {
+      const maxLevel = getFamily().maxLevel;
+      const level = Math.min(maxLevel, Math.max(1, Math.floor(Number(profile.level) || 1)));
+      const step = areaCosts(area).find((entry) => entry.level === level);
+      const expMax = step ? step.symbols : 0;
+      const exp = Math.min(Math.max(0, Math.floor(Number(profile.exp) || 0)), expMax);
+      const gains = normalizeGains(profile.gains, profile.paceMode, area);
+      return { level, exp, gains };
+    }
+
+    function normalizeGains(gains, paceMode, area) {
+      const defaults = {
+        daily: true,
+        weekly: (area.weeklyReward || 0) > 0,
+        extra: (area.extraReward || 0) > 0,
+      };
+      const legacy = {
+        daily: paceMode === "daily" || paceMode === "extra",
+        weekly: paceMode === "weekly",
+        extra: paceMode === "extra",
+      };
+      const source = gains && typeof gains === "object" ? gains : legacy;
+      return {
+        daily: typeof source.daily === "boolean" ? source.daily : defaults.daily,
+        weekly: typeof source.weekly === "boolean" ? source.weekly : defaults.weekly,
+        extra: typeof source.extra === "boolean" ? source.extra : defaults.extra,
+      };
+    }
+
+    function areaCosts(area) {
+      const family = getFamily();
+      const maxLevel = family.maxLevel;
+      const rows = [];
+      let cumulativeSymbols = 0;
+      let cumulativeMeso = 0;
+
+      for (let level = 1; level < maxLevel; level += 1) {
+        const symbols = family.symbolFormula(level);
+        const meso = calcMeso(area, level, symbols);
+        cumulativeSymbols += symbols;
+        cumulativeMeso += meso;
+        rows.push({
+          level,
+          next: level + 1,
+          symbols,
+          meso,
+          cumulativeSymbols,
+          cumulativeMeso,
+        });
+      }
+
+      return rows;
+    }
+
+    function calcMeso(area, level, symbols = null) {
+      const familyKey = state.familyKey;
+      const fam = SYMBOL_DATA[familyKey];
+      const count = symbols ?? fam.symbolFormula(level);
+      if (familyKey === "arcane") {
+        return Math.floor(count * (area.costBase + (0.1 * level))) * 10000;
+      }
+      return Math.floor(count * (area.costBase - (0.6 * level))) * 100000;
+    }
+
+    function paceValue(area, gains) {
+      const active = gains || {};
+      let total = 0;
+      if (active.daily) {
+        total += area.dailyReward;
+      }
+      if (active.weekly && area.weeklyReward > 0) {
+        total += area.weeklyReward / 7;
+      }
+      if (active.extra && area.extraReward > 0) {
+        total += area.extraReward;
+      }
+      return total;
+    }
+
+    function gainSummary(area, gains) {
+      const active = gains || {};
+      const parts = [];
+      if (active.daily) parts.push("Daily");
+      if (active.weekly && area.weeklyReward > 0) parts.push("Weekly");
+      if (active.extra && area.extraReward > 0) parts.push("Extra");
+      return parts.length ? parts.join(" + ") : "No gains selected";
+    }
+
+    function currentProgress(area, profile) {
+      const rows = areaCosts(area);
+      const before = rows.filter((entry) => entry.level < profile.level).reduce((sum, entry) => sum + entry.symbols, 0);
+      const currentReq = rows.find((entry) => entry.level === profile.level);
+      const current = before + profile.exp;
+      const total = rows.reduce((sum, entry) => sum + entry.symbols, 0);
+      const remainingSymbols = Math.max(0, total - current);
+      const remainingMeso = rows
+        .filter((entry) => entry.level >= profile.level)
+        .reduce((sum, entry) => sum + entry.meso, 0);
+      return {
+        before,
+        currentReq,
+        current,
+        total,
+        remainingSymbols,
+        remainingMeso,
+        levelsLeft: Math.max(0, getFamily().maxLevel - profile.level),
+      };
+    }
+
+    function fmt(value) {
+      return Number(value || 0).toLocaleString("en-US");
+    }
+
+    function formatCompletionDate(days, baseDate = null) {
+      if (days === null) return "N/A";
+      const base = baseDate ? new Date(baseDate) : new Date();
+      base.setHours(0, 0, 0, 0);
+      base.setDate(base.getDate() + days);
+      return base.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function renderFamilyButtons() {
+      byId("familyButtons").innerHTML = Object.entries(SYMBOL_DATA).map(([key, family]) => {
+        const active = key === state.familyKey ? "active" : "";
+        return '<button class="segment ' + active + '" type="button" data-family="' + key + '">' + family.name + '</button>';
+      }).join("");
+    }
+
+    function renderAreaButtons() {
+      const areas = getAreaList();
+      const family = getFamily();
+      byId("areaButtons").innerHTML = areas.map((area) => {
+        const profile = clampProfile(getProfile(area.id), area);
+        const active = area.id === state.areaId ? "active" : "";
+        return '<button class="symbol-card ' + active + '" type="button" data-area="' + area.id + '">' +
+          '<div class="symbol-art"><img src="' + area.image + '" alt="' + area.name + ' symbol"></div>' +
+          '<div><strong>' + area.name + '</strong><div class="level">Lv. ' + profile.level + '</div>' +
+          '<div class="family-note">' + family.name + '</div></div>' +
+        '</button>';
+      }).join("");
+    }
+
+    function renderPaceButtons(area, profile) {
+      const options = [
+        { key: "daily", label: "Daily", enabled: area.dailyReward > 0, title: area.dailyLabel + " baseline" },
+        { key: "weekly", label: "Weekly", enabled: area.weeklyReward > 0, title: area.weeklyReward > 0 ? area.weeklyLabel + " averaged over seven days" : "No weekly reward on this symbol" },
+        { key: "extra", label: "Extra", enabled: area.extraReward > 0, title: area.extraReward > 0 ? "Daily baseline plus the unlocked extra daily bonus" : "No extra daily bonus on this symbol" },
+      ];
+
+      return options.map((option) => {
+        const active = profile.gains && profile.gains[option.key] ? "active" : "";
+        const disabled = option.enabled ? "" : "disabled";
+        return '<button class="compact-button pace-button ' + active + '" type="button" data-pace="' + option.key + '" ' + disabled + ' title="' + option.title + '">' + option.label + '</button>';
+      }).join("");
+    }
+
+    function render() {
+      const selectedArea = getArea();
+      if (!selectedArea) return;
+      const area = getArea();
+      const profile = clampProfile(getProfile(area.id), area);
+      state.profiles[area.id] = profile;
+      const progress = currentProgress(area, profile);
+      const daily = paceValue(area, profile.gains);
+      const days = progress.remainingSymbols === 0 ? 0 : daily > 0 ? Math.ceil(progress.remainingSymbols / daily) : null;
+
+      const trackerView = byId("trackerView");
+      const handbookView = byId("handbookView");
+      const trackerTab = byId("trackerTab");
+      const handbookTab = byId("handbookTab");
+      const handbookMode = state.view === "handbook";
+      trackerView.classList.toggle("hidden", handbookMode);
+      handbookView.classList.toggle("hidden", !handbookMode);
+      trackerTab.classList.toggle("active", !handbookMode);
+      handbookTab.classList.toggle("active", handbookMode);
+      trackerTab.setAttribute("aria-selected", String(!handbookMode));
+      handbookTab.setAttribute("aria-selected", String(handbookMode));
+
+      byId("heroAreaName").textContent = area.name;
+      byId("heroRemaining").textContent = progress.remainingSymbols === 0 ? "Maxed" : fmt(progress.remainingSymbols) + " symbols left";
+      byId("heroMeta").textContent = area.dailyLabel + " gives " + fmt(area.dailyReward) + " per day" + (area.weeklyReward ? " and " + fmt(area.weeklyReward) + " per week from the weekly content." : ".");
+
+      byId("levelInput").value = profile.level;
+      byId("levelInput").max = getFamily().maxLevel;
+      byId("expInput").value = profile.exp;
+      byId("expInput").max = progress.currentReq ? progress.currentReq.symbols : 0;
+      byId("expInput").disabled = !progress.currentReq;
+      byId("paceButtons").innerHTML = renderPaceButtons(area, profile);
+      byId("paceDescription").textContent = gainSummary(area, profile.gains) + (daily > 0
+        ? " is currently active for the remaining-time estimate."
+        : " is currently off, so the remaining-time estimate is unavailable.");
+      const overview = buildOverviewTableMarkup();
+      byId("overviewTable").innerHTML = overview.html;
+      byId("maxDateText").textContent = overview.maxDateText;
+      byId("maxDateSummary").textContent = overview.maxDateSummary;
+      byId("remainingMesoText").textContent = fmt(overview.totalMesoRemaining) + " meso";
+      byId("remainingMesoSummary").textContent = "Total remaining cost across all symbols";
+
+      byId("costTable").innerHTML = buildCostTableMarkup(area, profile).join("");
+
+      renderFamilyButtons();
+      renderAreaButtons();
+      saveState();
+    }
+
+    function familyCostText(familyKey, area) {
+      if (familyKey === "arcane") {
+        return "Arcane symbols use the standard level cost formula with area-specific meso multipliers.";
+      }
+      return "Sacred symbols use the standard Sacred level cost formula with area-specific meso multipliers.";
+    }
+
+    function buildOverviewTableMarkup() {
+      const family = getFamily();
+      const areas = getAreaList();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let maxDays = null;
+      let maxArea = "";
+      let totalMesoRemaining = 0;
+      const rows = areas.map((area) => {
+        const profile = clampProfile(getProfile(area.id), area);
+        state.profiles[area.id] = profile;
+        const progress = currentProgress(area, profile);
+        totalMesoRemaining += progress.remainingMeso;
+        const daily = paceValue(area, profile.gains);
+        const days = progress.remainingSymbols === 0 ? 0 : daily > 0 ? Math.ceil(progress.remainingSymbols / daily) : null;
+        if (days !== null && (maxDays === null || days > maxDays)) {
+          maxDays = days;
+          maxArea = area.name;
+        }
+        const rowClass = area.id === state.areaId ? "active" : progress.remainingSymbols === 0 ? "done" : "";
+        const areaLabel = area.name;
+        const completionDate = days === null ? "N/A" : formatCompletionDate(days, today);
+        const daysLabel = days === null ? "Enable gains to estimate." : days === 0 ? "0 days remaining" : fmt(days) + " days remaining";
+        return '<tr class="' + rowClass + '">' +
+          '<td class="wrap"><span class="cell-title">' + areaLabel + '</span><span class="cell-subtitle">' + family.name + '</span></td>' +
+          '<td class="num">Lv. ' + profile.level + '</td>' +
+          '<td class="wrap"><span class="cell-title">' + completionDate + '</span><span class="cell-subtitle">' + daysLabel + '</span></td>' +
+          '<td class="num">' + fmt(progress.remainingSymbols) + '</td>' +
+          '<td class="num">' + fmt(progress.remainingMeso) + ' meso</td>' +
+        '</tr>';
+      }).join("");
+
+      const maxDateText = maxDays === null ? "N/A" : formatCompletionDate(maxDays, today);
+      const maxDateSummary = maxDays === null ? "No symbols have an active pace." : maxArea + " · " + fmt(maxDays) + " days";
+
+      return {
+        html: '<thead><tr><th>Area / Symbol</th><th class="num">Level</th><th class="num">Complete Date (Days)</th><th class="num">Symbols Remaining (Total)</th><th class="num">Cost Remaining (Total)</th></tr></thead><tbody>' + rows + '</tbody>',
+        maxDateText: maxDateText === "N/A" ? "N/A" : maxDateText,
+        maxDateSummary,
+        totalMesoRemaining,
+      };
+    }
+
+    function buildCostTableMarkup(area, profile) {
+      const rows = areaCosts(area);
+      const current = profile.level;
+      const body = rows.map((entry) => {
+        const cls = entry.level < current ? "done" : entry.level === current ? "active" : "";
+        return '<tr class="' + cls + '"><td>' + entry.level + " -> " + entry.next + '</td><td class="num">' + fmt(entry.symbols) + '</td><td class="num">' + fmt(entry.meso) + '</td><td class="num">' + fmt(entry.cumulativeSymbols) + '</td><td class="num">' + fmt(entry.cumulativeMeso) + "</td></tr>";
+      }).join("");
+
+      return ['<thead><tr><th>Level</th><th class="num">Symbols</th><th class="num">Meso</th><th class="num">Cumulative Symbols</th><th class="num">Cumulative Meso</th></tr></thead><tbody>' + body + '</tbody>'];
+    }
+
+    byId("trackerTab").addEventListener("click", () => {
+      state.view = "tracker";
+      render();
+    });
+
+    byId("handbookTab").addEventListener("click", () => {
+      state.view = "handbook";
+      render();
+    });
+
+    byId("familyButtons").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-family]");
+      if (!button) return;
+      state.familyKey = button.dataset.family;
+      const firstArea = getFamily().areas[0];
+      if (!getAreaList().some((area) => area.id === state.areaId)) {
+        state.areaId = firstArea.id;
+      }
+      render();
+    });
+
+    byId("areaButtons").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-area]");
+      if (!button) return;
+      state.areaId = button.dataset.area;
+      const profile = getProfile(state.areaId);
+      state.profiles[state.areaId] = clampProfile(profile, getArea());
+      render();
+    });
+
+    byId("paceButtons").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-pace]");
+      if (!button || button.disabled) return;
+      const area = getArea();
+      const profile = getProfile(area.id);
+      const current = normalizeGains(profile.gains, profile.paceMode, area);
+      current[button.dataset.pace] = !current[button.dataset.pace];
+      profile.gains = current;
+      state.profiles[area.id] = clampProfile(profile, area);
+      render();
+    });
+
+    byId("levelInput").addEventListener("input", (event) => {
+      const area = getArea();
+      const profile = getProfile(area.id);
+      profile.level = Number(event.target.value || 1);
+      state.profiles[area.id] = clampProfile(profile, area);
+      render();
+    });
+
+    byId("expInput").addEventListener("input", (event) => {
+      const area = getArea();
+      const profile = getProfile(area.id);
+      profile.exp = Number(event.target.value || 0);
+      state.profiles[area.id] = clampProfile(profile, area);
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
