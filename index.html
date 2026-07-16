@@ -184,6 +184,9 @@
       <button class="nav-button" type="button" data-src="ride-the-lightning.html?v=20260624-sidebar" data-title="Ride the Lightning v.269 Tracker">
         Ride the Lightning
       </button>
+      <button class="nav-button" type="button" data-src="symbol-tracker.html?v=20260715-sidebar" data-title="Symbol Tracker">
+        Symbol Tracker
+      </button>
     </nav>
 
     <div class="top-actions" aria-label="Current tracker save controls">
@@ -204,7 +207,8 @@
     <div class="noscript">
       JavaScript is required for the combined tracker navigation. You can still open
       <a href="familiar-badge.html">Familiar Badges</a> or
-      <a href="ride-the-lightning.html">Ride the Lightning</a> directly.
+      <a href="ride-the-lightning.html">Ride the Lightning</a> or
+      <a href="symbol-tracker.html">Symbol Tracker</a> directly.
     </div>
   </noscript>
 
@@ -224,7 +228,11 @@
       openCurrent.href = button.dataset.src;
 
       if (pushHash) {
-        const hash = button.dataset.src.includes("ride") ? "ride-the-lightning" : "familiar-badges";
+        const hash = button.dataset.src.includes("ride")
+          ? "ride-the-lightning"
+          : button.dataset.src.includes("symbol")
+            ? "symbol-tracker"
+            : "familiar-badges";
         history.replaceState(null, "", `#${hash}`);
       }
     }
@@ -243,9 +251,11 @@
       frame.contentWindow?.postMessage({ type: "maple-import-current" }, targetOrigin);
     });
 
-    const initial = location.hash.toLowerCase().includes("ride")
-      ? buttons.find((button) => button.dataset.src.includes("ride"))
-      : buttons[0];
+    const initial = location.hash.toLowerCase().includes("symbol")
+      ? buttons.find((button) => button.dataset.src.includes("symbol"))
+      : location.hash.toLowerCase().includes("ride")
+        ? buttons.find((button) => button.dataset.src.includes("ride"))
+        : buttons[0];
     showTracker(initial, false);
   </script>
 </body>
