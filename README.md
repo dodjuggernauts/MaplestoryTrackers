@@ -8,6 +8,7 @@ The GitHub Pages default page is `index.html`. It provides a top navigation bar 
 
 - Familiar Badges
 - Ride the Lightning v.269
+- Symbol Tracker
 
 ## Familiar Badge Tracker
 
@@ -23,3 +24,11 @@ The v.269 event tracker is available at `ride-the-lightning.html`.
 
 - Task, quest-starter, and shop progress is saved in the browser's local storage.
 - The page includes a weekly timeline, progress tracker, quest starter checklist, and shop calculator.
+
+## Symbol Tracker
+
+The Symbol Tracker is available at `symbol-tracker.html`.
+
+- Choose Arcane or Sacred symbols, then enter your current level, current symbol exp, and daily pace.
+- The page calculates symbols remaining, meso remaining, and estimated days to max.
+- Data and leveling costs are sourced from the MapleStory Wiki symbol pages.
